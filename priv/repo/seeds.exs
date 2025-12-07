@@ -11,10 +11,15 @@ if Mix.env() == :dev do
   Repo.delete_all(Employee)
 end
 
-# Створюємо співробітників зі списку (замініть на ваших)
+# Створюємо співробітників зі списку
 employees_data = [
-  %{name: "Користувач 1", email: "user1@example.com"},
-  %{name: "Користувач 2", email: "user2@example.com"}
+  %{name: "Іванна Сакало", email: "ivanna.sakalo@opslab.uk"},
+  %{name: "Михайло Іващук", email: "mykhailo.ivashchuk@opslab.uk"},
+  %{name: "Вероніка Кухарчук", email: "veronika.kukharchuk@opslab.uk"},
+  %{name: "Катерина Петухова", email: "kateryna.petukhova@opslab.uk"},
+  %{name: "Марія Василик", email: "mariya.vasylyk@opslab.uk"},
+  %{name: "Оксана Клінчаян", email: "oksana.klinchaian@opslab.uk"},
+  %{name: "Ірина Мячкова", email: "iryna.miachkova@opslab.uk"}
 ]
 
 Enum.each(employees_data, fn employee_data ->
