@@ -1,0 +1,170 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* Neobrutalism Design System */
+
+@layer components {
+  /* Cards */
+  .neo-brutal-card {
+    @apply bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)];
+  }
+
+  /* Buttons */
+  .neo-brutal-btn {
+    @apply px-6 py-3 font-black uppercase border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px];
+  }
+
+  .neo-brutal-btn-sm {
+    @apply px-3 py-2 text-sm font-black uppercase border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px];
+  }
+
+  /* Inputs */
+  .neo-brutal-input {
+    @apply px-4 py-3 border-4 border-black font-bold focus:outline-none focus:ring-0 focus:border-blue-500;
+  }
+
+  /* Tables */
+  .neo-brutal-table {
+    @apply w-full border-4 border-black;
+  }
+
+  .neo-brutal-table thead {
+    @apply bg-black text-white;
+  }
+
+  .neo-brutal-table th {
+    @apply px-4 py-3 text-left font-black uppercase text-sm border-r-2 border-white last:border-r-0;
+  }
+
+  .neo-brutal-table td {
+    @apply px-4 py-3 border-t-2 border-b-2 border-black font-medium;
+  }
+
+  .neo-brutal-table tbody tr:nth-child(odd) {
+    @apply bg-white;
+  }
+
+  .neo-brutal-table tbody tr:nth-child(even) {
+    @apply bg-gray-50;
+  }
+
+  /* Badges */
+  .neo-brutal-badge {
+    @apply inline-block px-3 py-1 font-black uppercase text-xs border-2 border-black;
+  }
+
+  /* Alerts */
+  .neo-brutal-alert {
+    @apply border-4 border-black p-4 font-bold shadow-[6px_6px_0px_0px_rgba(0,0,0,1)];
+  }
+}
+
+/* Custom Utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* LiveView specific styles */
+.phx-no-feedback.invalid-feedback,
+.phx-no-feedback .invalid-feedback {
+  display: none;
+}
+
+.phx-click-loading {
+  opacity: 0.5;
+  transition: opacity 1s ease-out;
+}
+
+.phx-loading {
+  cursor: wait;
+}
+
+.phx-modal {
+  opacity: 1 !important;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.phx-modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 4px solid #000;
+  width: 80%;
+  max-width: 600px;
+  box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1);
+}
+
+.fade-in-scale {
+  animation: 0.2s ease-in 0s normal forwards 1 fade-in-scale-keys;
+}
+
+.fade-out-scale {
+  animation: 0.2s ease-out 0s normal forwards 1 fade-out-scale-keys;
+}
+
+.fade-in {
+  animation: 0.2s ease-out 0s normal forwards 1 fade-in-keys;
+}
+
+.fade-out {
+  animation: 0.2s ease-out 0s normal forwards 1 fade-out-keys;
+}
+
+@keyframes fade-in-scale-keys {
+  0% {
+    scale: 0.95;
+    opacity: 0;
+  }
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out-scale-keys {
+  0% {
+    scale: 1;
+    opacity: 1;
+  }
+  100% {
+    scale: 0.95;
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in-keys {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out-keys {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

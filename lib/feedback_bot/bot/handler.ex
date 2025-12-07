@@ -1,0 +1,213 @@
+defmodule FeedbackBot.Bot.Handler do
+  @moduledoc """
+  Telegram Bot Handler з продуманим флоу для запису голосового фідбеку.
+
+  Флоу бота:
+  1. /start - Вітання та перевірка доступу користувача
+  2. Список співробітників у вигляді inline кнопок
+  3. Після вибору співробітника - запит аудіо
+  4. Обробка аудіо через Whisper API
+  5. Аналіз через GPT-4o mini
+  6. Збереження та підтвердження
+  """
+
+  use ExGram.Bot,
+    name: __MODULE__,
+    setup_commands: true
+
+  require Logger
+  alias FeedbackBot.{Employees, Feedbacks, AI}
+
+  command("start")
+  command("help")
+  command("list")
+  command("cancel")
+
+  middleware(ExGram.Middleware.IgnoreUsername)
+
+  def bot(), do: FeedbackBot.Bot.Handler
+
+  def handle({:command, :start, %{from: from}}, context) do
+    if authorized?(from.id) do
+      answer(context, """
+      👋 Вітаю! Це бот для збору голосового фідбеку про роботу співробітників.
+
+      🎤 Оберіть співробітника зі списку нижче, щоб записати фідбек:
+      """)
+
+      show_employee_list(context)
+    else
+      answer(context, "⛔️ У вас немає доступу до цього бота.")
+    end
+  end
+
+  def handle({:command, :help, _msg}, context) do
+    answer(context, """
+    📖 Як користуватися ботом:
+
+    1️⃣ Натисніть /start або /list
+    2️⃣ Оберіть співробітника зі списку
+    3️⃣ Запишіть голосове повідомлення з фідбеком
+    4️⃣ Надішліть аудіо - бот автоматично обробить його
+
+    ℹ️ Команди:
+    /list - Показати список співробітників
+    /cancel - Скасувати поточну дію
+    /help - Показати цю довідку
+    """)
+  end
+
+  def handle({:command, :list, _msg}, context) do
+    show_employee_list(context)
+  end
+
+  def handle({:command, :cancel, _msg}, context) do
+    # Очищуємо стан користувача
+    FeedbackBot.Bot.State.clear_state(context.update.message.from.id)
+    answer(context, "❌ Скасовано. Натисніть /start щоб почати знову.")
+  end
+
+  # Обробка callback query від inline кнопок
+  def handle({:callback_query, %{data: "employee:" <> employee_id} = query}, context) do
+    user_id = query.from.id
+
+    case Employees.get_employee(employee_id) do
+      nil ->
+        answer_callback_query(context, text: "❌ Співробітника не знайдено")
+
+      employee ->
+        # Зберігаємо обраного співробітника в стані
+        FeedbackBot.Bot.State.set_state(user_id, :selected_employee, employee_id)
+
+        answer_callback_query(context, text: "✅ Обрано: #{employee.name}")
+
+        edit(context, query.message, """
+        ✅ Ви обрали: *#{employee.name}*
+
+        🎤 Тепер запишіть голосове повідомлення з вашим фідбеком та надішліть його сюди.
+
+        💡 Підказки що включити у фідбек:
+        • Що вдалося добре?
+        • Які є проблеми або виклики?
+        • Що можна покращити?
+        • Загальне враження від роботи
+
+        Натисніть /cancel щоб скасувати.
+        """, parse_mode: "Markdown")
+    end
+  end
+
+  # Обробка голосових повідомлень
+  def handle({:message, %{voice: voice, from: from} = msg}, context) do
+    if authorized?(from.id) do
+      handle_voice_message(voice, from, msg, context)
+    else
+      answer(context, "⛔️ У вас немає доступу до цього бота.")
+    end
+  end
+
+  # Обробка аудіофайлів
+  def handle({:message, %{audio: audio, from: from} = msg}, context) do
+    if authorized?(from.id) do
+      handle_voice_message(audio, from, msg, context)
+    else
+      answer(context, "⛔️ У вас немає доступу до цього бота.")
+    end
+  end
+
+  # Обробка текстових повідомлень (для випадків коли користувач надсилає текст)
+  def handle({:message, %{text: text, from: from}}, context) when not is_nil(text) do
+    if authorized?(from.id) do
+      case FeedbackBot.Bot.State.get_state(from.id, :selected_employee) do
+        nil ->
+          answer(context, "👋 Натисніть /start щоб почати")
+
+        _employee_id ->
+          answer(context, """
+          🎤 Будь ласка, надішліть голосове повідомлення, а не текст.
+
+          Щоб записати голосове повідомлення:
+          1. Натисніть на значок мікрофону 🎤
+          2. Запишіть ваш фідбек
+          3. Надішліть аудіо
+
+          Або натисніть /cancel щоб скасувати.
+          """)
+      end
+    end
+  end
+
+  def handle(_update, _context), do: :ok
+
+  # === Приватні функції ===
+
+  defp authorized?(user_id) do
+    allowed_id = Application.get_env(:feedback_bot, :telegram)[:allowed_user_id]
+
+    case allowed_id do
+      nil ->
+        Logger.warning("ALLOWED_USER_ID not set - denying access")
+        false
+
+      id when is_binary(id) ->
+        String.to_integer(id) == user_id
+
+      id when is_integer(id) ->
+        id == user_id
+    end
+  end
+
+  defp show_employee_list(context) do
+    employees = Employees.list_active_employees()
+
+    if Enum.empty?(employees) do
+      answer(context, """
+      ❌ Немає активних співробітників у системі.
+
+      Додайте співробітників через веб-інтерфейс.
+      """)
+    else
+      keyboard =
+        employees
+        |> Enum.chunk_every(2)
+        |> Enum.map(fn chunk ->
+          Enum.map(chunk, fn emp ->
+            ExGram.Dsl.button(emp.name, callback_data: "employee:#{emp.id}")
+          end)
+        end)
+
+      markup = ExGram.Dsl.create_inline([keyboard])
+
+      answer(context, "👥 Оберіть співробітника:", reply_markup: markup)
+    end
+  end
+
+  defp handle_voice_message(voice, from, msg, context) do
+    employee_id = FeedbackBot.Bot.State.get_state(from.id, :selected_employee)
+
+    if employee_id do
+      answer(context, "⏳ Обробляю ваше аудіо повідомлення...")
+
+      # Запускаємо Oban job для обробки
+      %{
+        "voice" => %{
+          "file_id" => voice.file_id,
+          "duration" => voice.duration
+        },
+        "employee_id" => employee_id,
+        "user_id" => from.id,
+        "message_id" => msg.message_id,
+        "chat_id" => msg.chat.id
+      }
+      |> FeedbackBot.Jobs.ProcessAudioJob.new()
+      |> Oban.insert()
+    else
+      answer(context, """
+      ❌ Спочатку оберіть співробітника.
+
+      Натисніть /start щоб почати.
+      """)
+    end
+  end
+
+end
