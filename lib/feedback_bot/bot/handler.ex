@@ -142,18 +142,42 @@ defmodule FeedbackBot.Bot.Handler do
   # === Приватні функції ===
 
   defp authorized?(user_id) do
-    allowed_id = Application.get_env(:feedback_bot, :telegram)[:allowed_user_id]
+    allowed_ids = get_allowed_user_ids()
 
-    case allowed_id do
-      nil ->
-        Logger.warning("ALLOWED_USER_ID not set - denying access")
+    case allowed_ids do
+      [] ->
+        Logger.warning("ALLOWED_USER_IDS not set - denying access")
         false
 
-      id when is_binary(id) ->
-        String.to_integer(id) == user_id
+      ids ->
+        user_id in ids
+    end
+  end
 
-      id when is_integer(id) ->
-        id == user_id
+  defp get_allowed_user_ids do
+    # Підтримка як одного ID, так і списку
+    case Application.get_env(:feedback_bot, :telegram)[:allowed_user_ids] do
+      nil ->
+        # Fallback на старий формат ALLOWED_USER_ID
+        case Application.get_env(:feedback_bot, :telegram)[:allowed_user_id] do
+          nil -> []
+          id when is_binary(id) -> [String.to_integer(id)]
+          id when is_integer(id) -> [id]
+        end
+
+      ids when is_binary(ids) ->
+        # Формат: "123456789,987654321"
+        ids
+        |> String.split(",")
+        |> Enum.map(&String.trim/1)
+        |> Enum.map(&String.to_integer/1)
+
+      ids when is_list(ids) ->
+        # Формат: [123456789, 987654321]
+        Enum.map(ids, fn
+          id when is_binary(id) -> String.to_integer(id)
+          id when is_integer(id) -> id
+        end)
     end
   end
 

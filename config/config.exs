@@ -47,7 +47,8 @@ config :ex_gram,
   token: System.get_env("TELEGRAM_BOT_TOKEN")
 
 config :feedback_bot, :telegram,
-  allowed_user_id: System.get_env("ALLOWED_USER_ID")
+  allowed_user_id: System.get_env("ALLOWED_USER_ID"),
+  allowed_user_ids: System.get_env("ALLOWED_USER_IDS")
 
 config :feedback_bot, :openai,
   api_key: System.get_env("OPENAI_API_KEY"),
