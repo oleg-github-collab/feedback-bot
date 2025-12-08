@@ -590,8 +590,8 @@ defmodule FeedbackBot.Bot.Handler do
   end
 
   # Обробка голосових повідомлень
-  def handle({:message, %{voice: voice, from: from} = msg}, context) do
-    Logger.info("Voice handler triggered for user #{from.id}")
+  def handle({:message, %{voice: voice, from: from} = msg}, context) when not is_nil(voice) do
+    Logger.info("Voice handler triggered for user #{from.id}, voice: #{inspect(voice)}")
     if authorized?(from.id) do
       Logger.info("User #{from.id} authorized, processing voice")
       handle_voice_message(voice, from, msg, context)
@@ -792,7 +792,10 @@ defmodule FeedbackBot.Bot.Handler do
     """, parse_mode: "Markdown")
   end
 
-  def handle(_update, _context), do: :ok
+  def handle(update, _context) do
+    Logger.warning("Unhandled update: #{inspect(update, limit: :infinity)}")
+    :ok
+  end
 
   # === Приватні функції ===
 
