@@ -12,10 +12,6 @@ defmodule FeedbackBotWeb.Endpoint do
     websocket: [connect_info: [session: @session_options]],
     longpoll: [connect_info: [session: @session_options]]
 
-  socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
-  plug Phoenix.LiveReloader
-  plug Phoenix.CodeReloader
-
   plug Phoenix.LiveDashboard.RequestLogger,
     param_key: "request_logger",
     cookie_key: "request_logger"
