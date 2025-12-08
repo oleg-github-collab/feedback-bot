@@ -9,10 +9,11 @@ defmodule FeedbackBotWeb.CoreComponents do
 
   alias Phoenix.LiveView.JS
 
-  # Import verified routes for ~p sigil
-  import Phoenix.VerifiedRoutes,
+  # Use verified routes for ~p sigil
+  use Phoenix.VerifiedRoutes,
     endpoint: FeedbackBotWeb.Endpoint,
-    router: FeedbackBotWeb.Router
+    router: FeedbackBotWeb.Router,
+    statics: FeedbackBotWeb.static_paths()
 
   @doc """
   Renders flash notices.
