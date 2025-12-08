@@ -96,7 +96,7 @@ defmodule FeedbackBot.Jobs.ProcessAudioJob do
          _ = Logger.info("File path: #{file_path}"),
          download_url = "https://api.telegram.org/file/bot#{token}/#{file_path}",
          _ = Logger.info("Download URL: #{download_url}"),
-         {:ok, %{status: 200, body: body}} <- HTTPoison.get(download_url),
+         {:ok, %HTTPoison.Response{status_code: 200, body: body}} <- HTTPoison.get(download_url),
          _ = Logger.info("Downloaded file, size: #{byte_size(body)} bytes") do
       # Зберігаємо файл локально
       local_path = Path.join([System.tmp_dir!(), "#{file_id}.ogg"])
