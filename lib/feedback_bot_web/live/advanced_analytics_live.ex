@@ -221,14 +221,14 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
         <h2 class="text-xl font-bold mb-4">⏱️ Хронологія фідбеків</h2>
         <div class="space-y-4">
           <%= for item <- Enum.take(@timeline_data, 20) do %>
-            <div class="border-l-4 pl-4 <%= sentiment_border_color(item.sentiment_label) %>">
+            <div class={"border-l-4 pl-4 #{sentiment_border_color(item.sentiment_label)}"}>
               <div class="flex justify-between items-start">
                 <div>
                   <p class="font-medium"><%= item.employee_name %></p>
                   <p class="text-sm text-gray-600"><%= Calendar.strftime(item.date, "%d.%m.%Y %H:%M") %></p>
                 </div>
                 <div class="flex gap-2">
-                  <span class="px-2 py-1 text-xs rounded <%= sentiment_badge_color(item.sentiment_label) %>">
+                  <span class={"px-2 py-1 text-xs rounded #{sentiment_badge_color(item.sentiment_label)}"}>
                     <%= item.sentiment_label %>
                   </span>
                   <%= if item.urgency_score > 0.7 do %>
