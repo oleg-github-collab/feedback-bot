@@ -252,11 +252,11 @@ defmodule FeedbackBot.Bot.Handler do
         |> Enum.chunk_every(2)
         |> Enum.map(fn chunk ->
           Enum.map(chunk, fn emp ->
-            ExGram.Dsl.button(emp.name, callback_data: "employee:#{emp.id}")
+            %{text: emp.name, callback_data: "employee:#{emp.id}"}
           end)
         end)
 
-      markup = ExGram.Dsl.create_inline([keyboard])
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
       answer(context, "👥 Оберіть співробітника:", reply_markup: markup)
     end

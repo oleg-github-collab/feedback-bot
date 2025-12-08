@@ -216,7 +216,7 @@ defmodule FeedbackBotWeb.DashboardLive do
             "text-sm font-black",
             sentiment_color(@sentiment)
           ]}>
-            <%= Float.round(@sentiment, 2) %>
+            <%= if is_float(@sentiment), do: Float.round(@sentiment, 2), else: @sentiment %>
           </span>
         </div>
         <%= if @trend != 0 do %>
