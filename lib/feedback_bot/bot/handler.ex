@@ -220,8 +220,6 @@ defmodule FeedbackBot.Bot.Handler do
 
     if Enum.empty?(employees) do
       ExGram.edit_message_text(
-        query.message.chat.id,
-        query.message.message_id,
         """
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         ❌ *НЕМАЄ СПІВРОБІТНИКІВ*
@@ -230,6 +228,8 @@ defmodule FeedbackBot.Bot.Handler do
 
         Або попросіть адміністратора додати їх.
         """,
+        chat_id: query.message.chat.id,
+        message_id: query.message.message_id,
         parse_mode: "Markdown"
       )
     else
@@ -246,8 +246,6 @@ defmodule FeedbackBot.Bot.Handler do
       markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard_with_back}
 
       ExGram.edit_message_text(
-        query.message.chat.id,
-        query.message.message_id,
         """
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         *ПРОГРЕС: 1 з 3 кроків* ⬤○○
@@ -259,6 +257,8 @@ defmodule FeedbackBot.Bot.Handler do
 
         Натисніть на ім'я співробітника зі списку:
         """,
+        chat_id: query.message.chat.id,
+        message_id: query.message.message_id,
         parse_mode: "Markdown",
         reply_markup: markup
       )
@@ -286,8 +286,6 @@ defmodule FeedbackBot.Bot.Handler do
     markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
     ExGram.edit_message_text(
-      query.message.chat.id,
-      query.message.message_id,
       """
       👋 *Вітаю у FeedbackBot!*
 
@@ -300,6 +298,8 @@ defmodule FeedbackBot.Bot.Handler do
 
       Оберіть дію нижче:
       """,
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
       parse_mode: "Markdown",
       reply_markup: markup
     )
@@ -313,8 +313,6 @@ defmodule FeedbackBot.Bot.Handler do
     ExGram.answer_callback_query(query.id, text: "✅ Режим додавання")
 
     ExGram.edit_message_text(
-      query.message.chat.id,
-      query.message.message_id,
       """
       ➕ *Додавання нового співробітника*
 
@@ -324,6 +322,8 @@ defmodule FeedbackBot.Bot.Handler do
 
       Надішліть ім'я текстовим повідомленням або /cancel щоб скасувати.
       """,
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
       parse_mode: "Markdown"
     )
   end
@@ -332,13 +332,13 @@ defmodule FeedbackBot.Bot.Handler do
     ExGram.answer_callback_query(query.id, text: "✏️ Оберіть співробітника")
 
     ExGram.edit_message_text(
-      query.message.chat.id,
-      query.message.message_id,
       """
       ✏️ *Редагування співробітника*
 
       Оберіть співробітника для редагування:
       """,
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
       parse_mode: "Markdown"
     )
 
@@ -349,8 +349,6 @@ defmodule FeedbackBot.Bot.Handler do
     ExGram.answer_callback_query(query.id, text: "🗑 Оберіть співробітника")
 
     ExGram.edit_message_text(
-      query.message.chat.id,
-      query.message.message_id,
       """
       🗑 *Видалення співробітника*
 
@@ -358,6 +356,8 @@ defmodule FeedbackBot.Bot.Handler do
 
       Оберіть співробітника:
       """,
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
       parse_mode: "Markdown"
     )
 
@@ -386,8 +386,6 @@ defmodule FeedbackBot.Bot.Handler do
     markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
     ExGram.edit_message_text(
-      query.message.chat.id,
-      query.message.message_id,
       """
       👥 *Всі співробітники*
 
@@ -395,6 +393,8 @@ defmodule FeedbackBot.Bot.Handler do
 
       ✅ — активний | ❌ — деактивований
       """,
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
       parse_mode: "Markdown",
       reply_markup: markup
     )
@@ -420,9 +420,7 @@ defmodule FeedbackBot.Bot.Handler do
         markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
         ExGram.edit_message_text(
-          query.message.chat.id,
-          query.message.message_id,
-          """
+      """
           ✏️ *Редагування: #{employee.name}*
 
           Поточні дані:
@@ -433,9 +431,11 @@ defmodule FeedbackBot.Bot.Handler do
 
           Надішліть нове ім'я або /cancel
           """,
-          parse_mode: "Markdown",
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
+      parse_mode: "Markdown",
           reply_markup: markup
-        )
+    )
     end
   end
 
@@ -457,18 +457,18 @@ defmodule FeedbackBot.Bot.Handler do
             markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
             ExGram.edit_message_text(
-              query.message.chat.id,
-              query.message.message_id,
-              """
+      """
               ✅ *Співробітника деактивовано*
 
               👤 *#{employee.name}* більше не відображається у списку активних співробітників.
 
               📊 Всі фідбеки залишились в базі даних для історії.
               """,
-              parse_mode: "Markdown",
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
+      parse_mode: "Markdown",
               reply_markup: markup
-            )
+    )
 
           {:error, _changeset} ->
             ExGram.answer_callback_query(query.id, text: "❌ Помилка при видаленні")
@@ -500,8 +500,6 @@ defmodule FeedbackBot.Bot.Handler do
     markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
     ExGram.edit_message_text(
-      query.message.chat.id,
-      query.message.message_id,
       """
       ⚙️ *Управління Співробітниками*
 
@@ -514,6 +512,8 @@ defmodule FeedbackBot.Bot.Handler do
 
       Оберіть опцію:
       """,
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
       parse_mode: "Markdown",
       reply_markup: markup
     )
@@ -540,9 +540,7 @@ defmodule FeedbackBot.Bot.Handler do
         markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
         ExGram.edit_message_text(
-          query.message.chat.id,
-          query.message.message_id,
-          """
+      """
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           *ПРОГРЕС: 2 з 3 кроків* ⬤⬤○
 
@@ -583,9 +581,11 @@ defmodule FeedbackBot.Bot.Handler do
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           ℹ️ Натисніть кнопку нижче для детальної інструкції
           """,
-          parse_mode: "Markdown",
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
+      parse_mode: "Markdown",
           reply_markup: markup
-        )
+    )
     end
   end
 
