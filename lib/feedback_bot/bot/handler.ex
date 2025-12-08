@@ -219,14 +219,19 @@ defmodule FeedbackBot.Bot.Handler do
     employees = Employees.list_active_employees()
 
     if Enum.empty?(employees) do
-      edit(context, query.message, """
-      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      ❌ *НЕМАЄ СПІВРОБІТНИКІВ*
+      ExGram.edit_message_text(
+        query.message.chat.id,
+        query.message.message_id,
+        """
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ❌ *НЕМАЄ СПІВРОБІТНИКІВ*
 
-      Спочатку додайте співробітників через команду /manage
+        Спочатку додайте співробітників через команду /manage
 
-      Або попросіть адміністратора додати їх.
-      """, parse_mode: "Markdown")
+        Або попросіть адміністратора додати їх.
+        """,
+        parse_mode: "Markdown"
+      )
     else
       keyboard =
         employees
@@ -240,17 +245,23 @@ defmodule FeedbackBot.Bot.Handler do
       keyboard_with_back = keyboard ++ [[%{text: "🏠 Повернутись на початок", callback_data: "action:back_to_start"}]]
       markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard_with_back}
 
-      edit(context, query.message, """
-      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      *ПРОГРЕС: 1 з 3 кроків* ⬤○○
+      ExGram.edit_message_text(
+        query.message.chat.id,
+        query.message.message_id,
+        """
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        *ПРОГРЕС: 1 з 3 кроків* ⬤○○
 
-      🎤 *КРОК 1: ОБЕРІТЬ СПІВРОБІТНИКА*
+        🎤 *КРОК 1: ОБЕРІТЬ СПІВРОБІТНИКА*
 
-      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      👥 *Про кого ви хочете залишити фідбек?*
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        👥 *Про кого ви хочете залишити фідбек?*
 
-      Натисніть на ім'я співробітника зі списку:
-      """, parse_mode: "Markdown", reply_markup: markup)
+        Натисніть на ім'я співробітника зі списку:
+        """,
+        parse_mode: "Markdown",
+        reply_markup: markup
+      )
     end
   end
 
@@ -274,18 +285,24 @@ defmodule FeedbackBot.Bot.Handler do
 
     markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
-    edit(context, query.message, """
-    👋 *Вітаю у FeedbackBot!*
+    ExGram.edit_message_text(
+      query.message.chat.id,
+      query.message.message_id,
+      """
+      👋 *Вітаю у FeedbackBot!*
 
-    Цей бот допоможе вам швидко записати голосовий фідбек про роботу співробітників.
+      Цей бот допоможе вам швидко записати голосовий фідбек про роботу співробітників.
 
-    ✨ *Що можна зробити?*
+      ✨ *Що можна зробити?*
 
-    🎤 *Записати фідбек* — оберіть співробітника та надішліть голосове повідомлення
-    📊 *Переглянути аналітику* — відкрийте веб-інтерфейс з детальною статистикою
+      🎤 *Записати фідбек* — оберіть співробітника та надішліть голосове повідомлення
+      📊 *Переглянути аналітику* — відкрийте веб-інтерфейс з детальною статистикою
 
-    Оберіть дію нижче:
-    """, parse_mode: "Markdown", reply_markup: markup)
+      Оберіть дію нижче:
+      """,
+      parse_mode: "Markdown",
+      reply_markup: markup
+    )
   end
 
   # Обробка управління співробітниками
@@ -295,25 +312,35 @@ defmodule FeedbackBot.Bot.Handler do
 
     ExGram.answer_callback_query(query.id, text: "✅ Режим додавання")
 
-    edit(context, query.message, """
-    ➕ *Додавання нового співробітника*
+    ExGram.edit_message_text(
+      query.message.chat.id,
+      query.message.message_id,
+      """
+      ➕ *Додавання нового співробітника*
 
-    *Крок 1 з 2:* Введіть ім'я співробітника
+      *Крок 1 з 2:* Введіть ім'я співробітника
 
-    📝 Приклад: Олена Шевченко
+      📝 Приклад: Олена Шевченко
 
-    Надішліть ім'я текстовим повідомленням або /cancel щоб скасувати.
-    """, parse_mode: "Markdown")
+      Надішліть ім'я текстовим повідомленням або /cancel щоб скасувати.
+      """,
+      parse_mode: "Markdown"
+    )
   end
 
   def handle({:callback_query, %{data: "manage:edit_employee"} = query}, context) do
     ExGram.answer_callback_query(query.id, text: "✏️ Оберіть співробітника")
 
-    edit(context, query.message, """
-    ✏️ *Редагування співробітника*
+    ExGram.edit_message_text(
+      query.message.chat.id,
+      query.message.message_id,
+      """
+      ✏️ *Редагування співробітника*
 
-    Оберіть співробітника для редагування:
-    """, parse_mode: "Markdown")
+      Оберіть співробітника для редагування:
+      """,
+      parse_mode: "Markdown"
+    )
 
     show_employee_list_for_edit(context, query.message.chat.id, query.message.message_id)
   end
@@ -321,13 +348,18 @@ defmodule FeedbackBot.Bot.Handler do
   def handle({:callback_query, %{data: "manage:delete_employee"} = query}, context) do
     ExGram.answer_callback_query(query.id, text: "🗑 Оберіть співробітника")
 
-    edit(context, query.message, """
-    🗑 *Видалення співробітника*
+    ExGram.edit_message_text(
+      query.message.chat.id,
+      query.message.message_id,
+      """
+      🗑 *Видалення співробітника*
 
-    ⚠️ Співробітник буде деактивований (не видалений з бази).
+      ⚠️ Співробітник буде деактивований (не видалений з бази).
 
-    Оберіть співробітника:
-    """, parse_mode: "Markdown")
+      Оберіть співробітника:
+      """,
+      parse_mode: "Markdown"
+    )
 
     show_employee_list_for_delete(context, query.message.chat.id, query.message.message_id)
   end
@@ -353,13 +385,19 @@ defmodule FeedbackBot.Bot.Handler do
 
     markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
-    edit(context, query.message, """
-    👥 *Всі співробітники*
+    ExGram.edit_message_text(
+      query.message.chat.id,
+      query.message.message_id,
+      """
+      👥 *Всі співробітники*
 
-    #{list_text}
+      #{list_text}
 
-    ✅ — активний | ❌ — деактивований
-    """, parse_mode: "Markdown", reply_markup: markup)
+      ✅ — активний | ❌ — деактивований
+      """,
+      parse_mode: "Markdown",
+      reply_markup: markup
+    )
   end
 
   def handle({:callback_query, %{data: "edit_emp:" <> employee_id} = query}, context) do
@@ -381,17 +419,23 @@ defmodule FeedbackBot.Bot.Handler do
 
         markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
-        edit(context, query.message, """
-        ✏️ *Редагування: #{employee.name}*
+        ExGram.edit_message_text(
+          query.message.chat.id,
+          query.message.message_id,
+          """
+          ✏️ *Редагування: #{employee.name}*
 
-        Поточні дані:
-        📛 Ім'я: *#{employee.name}*
-        📧 Email: *#{employee.email}*
+          Поточні дані:
+          📛 Ім'я: *#{employee.name}*
+          📧 Email: *#{employee.email}*
 
-        *Крок 1 з 2:* Введіть нове ім'я (або надішліть те саме щоб залишити)
+          *Крок 1 з 2:* Введіть нове ім'я (або надішліть те саме щоб залишити)
 
-        Надішліть нове ім'я або /cancel
-        """, parse_mode: "Markdown", reply_markup: markup)
+          Надішліть нове ім'я або /cancel
+          """,
+          parse_mode: "Markdown",
+          reply_markup: markup
+        )
     end
   end
 
@@ -412,13 +456,19 @@ defmodule FeedbackBot.Bot.Handler do
 
             markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
-            edit(context, query.message, """
-            ✅ *Співробітника деактивовано*
+            ExGram.edit_message_text(
+              query.message.chat.id,
+              query.message.message_id,
+              """
+              ✅ *Співробітника деактивовано*
 
-            👤 *#{employee.name}* більше не відображається у списку активних співробітників.
+              👤 *#{employee.name}* більше не відображається у списку активних співробітників.
 
-            📊 Всі фідбеки залишились в базі даних для історії.
-            """, parse_mode: "Markdown", reply_markup: markup)
+              📊 Всі фідбеки залишились в базі даних для історії.
+              """,
+              parse_mode: "Markdown",
+              reply_markup: markup
+            )
 
           {:error, _changeset} ->
             ExGram.answer_callback_query(query.id, text: "❌ Помилка при видаленні")
@@ -449,18 +499,24 @@ defmodule FeedbackBot.Bot.Handler do
 
     markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
-    edit(context, query.message, """
-    ⚙️ *Управління Співробітниками*
+    ExGram.edit_message_text(
+      query.message.chat.id,
+      query.message.message_id,
+      """
+      ⚙️ *Управління Співробітниками*
 
-    Оберіть дію для управління базою співробітників:
+      Оберіть дію для управління базою співробітників:
 
-    ➕ *Додати* — створити нового співробітника
-    ✏️ *Редагувати* — змінити дані існуючого
-    🗑 *Видалити* — деактивувати співробітника
-    👥 *Список* — переглянути всіх співробітників
+      ➕ *Додати* — створити нового співробітника
+      ✏️ *Редагувати* — змінити дані існуючого
+      🗑 *Видалити* — деактивувати співробітника
+      👥 *Список* — переглянути всіх співробітників
 
-    Оберіть опцію:
-    """, parse_mode: "Markdown", reply_markup: markup)
+      Оберіть опцію:
+      """,
+      parse_mode: "Markdown",
+      reply_markup: markup
+    )
   end
 
   def handle({:callback_query, %{data: "employee:" <> employee_id} = query}, context) do
@@ -483,47 +539,53 @@ defmodule FeedbackBot.Bot.Handler do
 
         markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
-        edit(context, query.message, """
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        *ПРОГРЕС: 2 з 3 кроків* ⬤⬤○
+        ExGram.edit_message_text(
+          query.message.chat.id,
+          query.message.message_id,
+          """
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          *ПРОГРЕС: 2 з 3 кроків* ⬤⬤○
 
-        ✅ *КРОК 1:* Обрано співробітника
-        👤 *#{employee.name}*
+          ✅ *КРОК 1:* Обрано співробітника
+          👤 *#{employee.name}*
 
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        🎤 *КРОК 2: ЗАПИШІТЬ ГОЛОСОВЕ*
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          🎤 *КРОК 2: ЗАПИШІТЬ ГОЛОСОВЕ*
 
-        *📱 НА ТЕЛЕФОНІ (найпростіше):*
-        1️⃣ Знайдіть значок 🎤 праворуч внизу
-        2️⃣ *НАТИСНІТЬ І ТРИМАЙТЕ* палець на 🎤
-        3️⃣ Говоріть свій фідбек
-        4️⃣ *ВІДПУСТІТЬ* — готово! ✅
+          *📱 НА ТЕЛЕФОНІ (найпростіше):*
+          1️⃣ Знайдіть значок 🎤 праворуч внизу
+          2️⃣ *НАТИСНІТЬ І ТРИМАЙТЕ* палець на 🎤
+          3️⃣ Говоріть свій фідбек
+          4️⃣ *ВІДПУСТІТЬ* — готово! ✅
 
-        *💻 НА КОМП'ЮТЕРІ:*
-        1️⃣ Клацніть 📎 (скріпка)
-        2️⃣ Оберіть "Записати голосове"
-        3️⃣ Запишіть та натисніть "Відправити"
+          *💻 НА КОМП'ЮТЕРІ:*
+          1️⃣ Клацніть 📎 (скріпка)
+          2️⃣ Оберіть "Записати голосове"
+          3️⃣ Запишіть та натисніть "Відправити"
 
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        💡 *ПРО ЩО ГОВОРИТИ:*
-        ✓ Сильні сторони та досягнення
-        ✓ Проблеми або складнощі
-        ✓ Що покращити
-        ✓ Загальне враження
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          💡 *ПРО ЩО ГОВОРИТИ:*
+          ✓ Сильні сторони та досягнення
+          ✓ Проблеми або складнощі
+          ✓ Що покращити
+          ✓ Загальне враження
 
-        ⏱ *Тривалість:* 30 сек - 2 хв (оптимально)
+          ⏱ *Тривалість:* 30 сек - 2 хв (оптимально)
 
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        ⚡ *ЩО СТАНЕТЬСЯ ДАЛІ:*
-        1. Ви надішлете голосове ✅
-        2. Бот підтвердить отримання ✅
-        3. AI розпізнає мову (10-20 сек) 🎯
-        4. AI проаналізує тональність (10-20 сек) 🧠
-        5. Отримаєте результат! 🎉
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ⚡ *ЩО СТАНЕТЬСЯ ДАЛІ:*
+          1. Ви надішлете голосове ✅
+          2. Бот підтвердить отримання ✅
+          3. AI розпізнає мову (10-20 сек) 🎯
+          4. AI проаналізує тональність (10-20 сек) 🧠
+          5. Отримаєте результат! 🎉
 
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        ℹ️ Натисніть кнопку нижче для детальної інструкції
-        """, parse_mode: "Markdown", reply_markup: markup)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ℹ️ Натисніть кнопку нижче для детальної інструкції
+          """,
+          parse_mode: "Markdown",
+          reply_markup: markup
+        )
     end
   end
 
