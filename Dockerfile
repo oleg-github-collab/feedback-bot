@@ -24,7 +24,7 @@ RUN mix deps.get --only prod
 RUN mix deps.compile
 
 # Copy compile-time config files before compiling
-COPY config/config.exs config/prod.exs config/
+COPY config/config.exs config/prod.exs config/runtime.exs config/
 RUN mix compile
 
 # Copy priv at build time
@@ -68,6 +68,9 @@ WORKDIR /home/app
 
 # Copy the release from builder
 COPY --from=builder --chown=app:app /app/_build/prod/rel/feedback_bot ./
+
+# Copy runtime config (critical for DATABASE_URL, secrets, etc.)
+COPY --from=builder --chown=app:app /app/config/runtime.exs ./releases/*/runtime.exs
 
 # Copy entrypoint script
 COPY --chown=app:app entrypoint.sh ./
