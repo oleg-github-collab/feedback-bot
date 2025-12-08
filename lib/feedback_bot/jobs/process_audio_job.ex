@@ -18,10 +18,14 @@ defmodule FeedbackBot.Jobs.ProcessAudioJob do
         }
       }) do
     Logger.info("Processing audio feedback for employee #{employee_id}")
+    Logger.info("Starting download for file_id: #{voice["file_id"]}")
 
     with {:ok, file_path} <- download_audio(voice["file_id"]),
+         _ = Logger.info("Download successful: #{file_path}"),
          {:ok, transcription} <- AI.WhisperClient.transcribe(file_path),
-         {:ok, analysis} <- AI.GPTClient.analyze_feedback(transcription, employee_id) do
+         _ = Logger.info("Transcription successful: #{String.slice(transcription, 0..50)}..."),
+         {:ok, analysis} <- AI.GPTClient.analyze_feedback(transcription, employee_id),
+         _ = Logger.info("Analysis successful") do
       # Зберігаємо фідбек у базі
       feedback_attrs = %{
         employee_id: employee_id,
@@ -72,9 +76,14 @@ defmodule FeedbackBot.Jobs.ProcessAudioJob do
       end
     else
       {:error, reason} ->
-        Logger.error("Failed to process audio: #{inspect(reason)}")
+        Logger.error("Failed to process audio: #{inspect(reason, pretty: true, limit: :infinity)}")
         send_error_message(chat_id, "Помилка при обробці аудіо: #{format_error(reason)}")
         {:error, reason}
+
+      other ->
+        Logger.error("Unexpected result in with clause: #{inspect(other, pretty: true, limit: :infinity)}")
+        send_error_message(chat_id, "Неочікувана помилка при обробці")
+        {:error, :unexpected_result}
     end
   end
 
