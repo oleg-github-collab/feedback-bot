@@ -63,9 +63,7 @@ config :feedback_bot, Oban,
     {Oban.Plugins.Cron, crontab: []}
   ]
 
-config :feedback_bot, :redis_url,
-  System.get_env("REDIS_URL") || "redis://localhost:6379"
-
+# Redis URL is configured in runtime.exs for prod, dev default below
 config :feedback_bot, :dev_routes, true
 
 import_config "#{config_env()}.exs"

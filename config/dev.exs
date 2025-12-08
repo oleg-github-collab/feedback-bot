@@ -38,3 +38,6 @@ config :phoenix, :plug_init_mode, :runtime
 config :phoenix_live_view,
   debug_heex_annotations: true,
   enable_expensive_runtime_checks: true
+
+# Redis URL for dev (optional, cache will be disabled if not set)
+config :feedback_bot, :redis_url, System.get_env("REDIS_URL")
