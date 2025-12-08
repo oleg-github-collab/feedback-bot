@@ -14,6 +14,7 @@ defmodule FeedbackBot.Application do
       {Finch, name: FeedbackBot.Finch},
       FeedbackBot.Bot.State,
       FeedbackBotWeb.Endpoint,
+      {Registry, keys: :unique, name: Registry.ExGram},
       {FeedbackBot.Bot.Supervisor, []}
     ]
 
