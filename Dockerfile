@@ -40,8 +40,8 @@ RUN mix compile
 
 # Build assets (if any)
 COPY assets assets
-COPY package.json package-lock.json* ./
-RUN cd assets && npm ci --prefer-offline --no-audit
+COPY package.json ./assets/
+RUN cd assets && npm install --no-save
 RUN mix assets.deploy
 
 # Build release
