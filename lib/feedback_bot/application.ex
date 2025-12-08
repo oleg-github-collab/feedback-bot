@@ -5,11 +5,11 @@ defmodule FeedbackBot.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
+    # Базові сервіси
+    base_children = [
       FeedbackBotWeb.Telemetry,
       FeedbackBot.Repo,
       {Oban, Application.fetch_env!(:feedback_bot, Oban)},
-      FeedbackBot.Cache,
       {DNSCluster, query: Application.get_env(:feedback_bot, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: FeedbackBot.PubSub},
       {Finch, name: FeedbackBot.Finch},
@@ -17,6 +17,13 @@ defmodule FeedbackBot.Application do
       FeedbackBotWeb.Endpoint,
       {FeedbackBot.Bot.Supervisor, []}
     ]
+
+    # Додаємо Cache тільки якщо Redis налаштовано
+    children = if Application.get_env(:feedback_bot, :redis_url) do
+      List.insert_at(base_children, 3, FeedbackBot.Cache)
+    else
+      base_children
+    end
 
     opts = [strategy: :one_for_one, name: FeedbackBot.Supervisor]
     Supervisor.start_link(children, opts)
