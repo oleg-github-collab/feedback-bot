@@ -23,6 +23,7 @@ defmodule FeedbackBot.Bot.Handler do
   command("help")
   command("list")
   command("analytics")
+  command("manage")
   command("cancel")
 
   middleware(ExGram.Middleware.IgnoreUsername)
@@ -129,6 +130,45 @@ defmodule FeedbackBot.Bot.Handler do
     """, parse_mode: "Markdown", reply_markup: markup)
   end
 
+  def handle({:command, :manage, %{from: from}}, context) do
+    if authorized?(from.id) do
+      keyboard = [
+        [
+          %{text: "➕ Додати співробітника", callback_data: "manage:add_employee"}
+        ],
+        [
+          %{text: "✏️ Редагувати співробітника", callback_data: "manage:edit_employee"}
+        ],
+        [
+          %{text: "🗑 Видалити співробітника", callback_data: "manage:delete_employee"}
+        ],
+        [
+          %{text: "👥 Список всіх співробітників", callback_data: "manage:list_all"}
+        ],
+        [
+          %{text: "🏠 Повернутись на початок", callback_data: "action:back_to_start"}
+        ]
+      ]
+
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+      answer(context, """
+      ⚙️ *Управління Співробітниками*
+
+      Оберіть дію для управління базою співробітників:
+
+      ➕ *Додати* — створити нового співробітника
+      ✏️ *Редагувати* — змінити дані існуючого
+      🗑 *Видалити* — деактивувати співробітника
+      👥 *Список* — переглянути всіх співробітників
+
+      Оберіть опцію:
+      """, parse_mode: "Markdown", reply_markup: markup)
+    else
+      answer(context, "⛔️ У вас немає доступу до цього бота.")
+    end
+  end
+
   def handle({:command, :cancel, _msg}, context) do
     # Очищуємо стан користувача
     FeedbackBot.Bot.State.clear_state(context.update.message.from.id)
@@ -182,6 +222,181 @@ defmodule FeedbackBot.Bot.Handler do
     """, parse_mode: "Markdown", reply_markup: markup)
   end
 
+  # Обробка управління співробітниками
+  def handle({:callback_query, %{data: "manage:add_employee"} = query}, context) do
+    user_id = query.from.id
+    FeedbackBot.Bot.State.set_state(user_id, :awaiting_action, "add_employee_name")
+
+    ExGram.answer_callback_query(query.id, text: "✅ Режим додавання")
+
+    edit(context, query.message, """
+    ➕ *Додавання нового співробітника*
+
+    *Крок 1 з 2:* Введіть ім'я співробітника
+
+    📝 Приклад: Олена Шевченко
+
+    Надішліть ім'я текстовим повідомленням або /cancel щоб скасувати.
+    """, parse_mode: "Markdown")
+  end
+
+  def handle({:callback_query, %{data: "manage:edit_employee"} = query}, context) do
+    ExGram.answer_callback_query(query.id, text: "✏️ Оберіть співробітника")
+
+    edit(context, query.message, """
+    ✏️ *Редагування співробітника*
+
+    Оберіть співробітника для редагування:
+    """, parse_mode: "Markdown")
+
+    show_employee_list_for_edit(context, query.message.chat.id, query.message.message_id)
+  end
+
+  def handle({:callback_query, %{data: "manage:delete_employee"} = query}, context) do
+    ExGram.answer_callback_query(query.id, text: "🗑 Оберіть співробітника")
+
+    edit(context, query.message, """
+    🗑 *Видалення співробітника*
+
+    ⚠️ Співробітник буде деактивований (не видалений з бази).
+
+    Оберіть співробітника:
+    """, parse_mode: "Markdown")
+
+    show_employee_list_for_delete(context, query.message.chat.id, query.message.message_id)
+  end
+
+  def handle({:callback_query, %{data: "manage:list_all"} = query}, context) do
+    employees = Employees.list_all_employees()
+
+    ExGram.answer_callback_query(query.id, text: "👥 Список співробітників")
+
+    list_text =
+      if Enum.empty?(employees) do
+        "Немає співробітників у системі."
+      else
+        Enum.map_join(employees, "\n", fn emp ->
+          status = if emp.is_active, do: "✅", else: "❌"
+          "#{status} *#{emp.name}* (#{emp.email})"
+        end)
+      end
+
+    keyboard = [
+      [%{text: "🏠 Назад", callback_data: "action:back_to_start"}]
+    ]
+
+    markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+    edit(context, query.message, """
+    👥 *Всі співробітники*
+
+    #{list_text}
+
+    ✅ — активний | ❌ — деактивований
+    """, parse_mode: "Markdown", reply_markup: markup)
+  end
+
+  def handle({:callback_query, %{data: "edit_emp:" <> employee_id} = query}, context) do
+    user_id = query.from.id
+
+    case Employees.get_employee(employee_id) do
+      nil ->
+        ExGram.answer_callback_query(query.id, text: "❌ Співробітника не знайдено")
+
+      employee ->
+        FeedbackBot.Bot.State.set_state(user_id, :awaiting_action, "edit_employee_name")
+        FeedbackBot.Bot.State.set_state(user_id, :editing_employee_id, employee_id)
+
+        ExGram.answer_callback_query(query.id, text: "✏️ Редагуємо #{employee.name}")
+
+        keyboard = [
+          [%{text: "❌ Скасувати", callback_data: "action:back_to_start"}]
+        ]
+
+        markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+        edit(context, query.message, """
+        ✏️ *Редагування: #{employee.name}*
+
+        Поточні дані:
+        📛 Ім'я: *#{employee.name}*
+        📧 Email: *#{employee.email}*
+
+        *Крок 1 з 2:* Введіть нове ім'я (або надішліть те саме щоб залишити)
+
+        Надішліть нове ім'я або /cancel
+        """, parse_mode: "Markdown", reply_markup: markup)
+    end
+  end
+
+  def handle({:callback_query, %{data: "delete_emp:" <> employee_id} = query}, context) do
+    case Employees.get_employee(employee_id) do
+      nil ->
+        ExGram.answer_callback_query(query.id, text: "❌ Співробітника не знайдено")
+
+      employee ->
+        case Employees.update_employee(employee, %{is_active: false}) do
+          {:ok, _updated} ->
+            ExGram.answer_callback_query(query.id, text: "✅ Видалено: #{employee.name}")
+
+            keyboard = [
+              [%{text: "🏠 На початок", callback_data: "action:back_to_start"}],
+              [%{text: "⚙️ Управління", callback_data: "action:manage_menu"}]
+            ]
+
+            markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+            edit(context, query.message, """
+            ✅ *Співробітника деактивовано*
+
+            👤 *#{employee.name}* більше не відображається у списку активних співробітників.
+
+            📊 Всі фідбеки залишились в базі даних для історії.
+            """, parse_mode: "Markdown", reply_markup: markup)
+
+          {:error, _changeset} ->
+            ExGram.answer_callback_query(query.id, text: "❌ Помилка при видаленні")
+        end
+    end
+  end
+
+  def handle({:callback_query, %{data: "action:manage_menu"} = query}, context) do
+    ExGram.answer_callback_query(query.id, text: "⚙️ Меню управління")
+
+    keyboard = [
+      [
+        %{text: "➕ Додати співробітника", callback_data: "manage:add_employee"}
+      ],
+      [
+        %{text: "✏️ Редагувати співробітника", callback_data: "manage:edit_employee"}
+      ],
+      [
+        %{text: "🗑 Видалити співробітника", callback_data: "manage:delete_employee"}
+      ],
+      [
+        %{text: "👥 Список всіх співробітників", callback_data: "manage:list_all"}
+      ],
+      [
+        %{text: "🏠 Повернутись на початок", callback_data: "action:back_to_start"}
+      ]
+    ]
+
+    markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+    edit(context, query.message, """
+    ⚙️ *Управління Співробітниками*
+
+    Оберіть дію для управління базою співробітників:
+
+    ➕ *Додати* — створити нового співробітника
+    ✏️ *Редагувати* — змінити дані існуючого
+    🗑 *Видалити* — деактивувати співробітника
+    👥 *Список* — переглянути всіх співробітників
+
+    Оберіть опцію:
+    """, parse_mode: "Markdown", reply_markup: markup)
+  end
+
   def handle({:callback_query, %{data: "employee:" <> employee_id} = query}, context) do
     user_id = query.from.id
 
@@ -196,6 +411,7 @@ defmodule FeedbackBot.Bot.Handler do
         ExGram.answer_callback_query(query.id, text: "✅ Обрано: #{employee.name}")
 
         keyboard = [
+          [%{text: "🎤 Детальна інструкція", callback_data: "help:voice_recording"}],
           [%{text: "🏠 Повернутись на початок", callback_data: "action:back_to_start"}]
         ]
 
@@ -206,20 +422,30 @@ defmodule FeedbackBot.Bot.Handler do
 
         Співробітник: *#{employee.name}*
 
-        🎤 *Як записати фідбек:*
-        1. Натисніть на значок мікрофону 🎤 у полі вводу
-        2. Запишіть ваш відгук (тримайте кнопку натиснутою)
-        3. Відпустіть кнопку та надішліть аудіо
+        🎤 *Як записати голосове в Telegram:*
+
+        📱 *На телефоні:*
+        • Знайдіть значок 🎤 мікрофона праворуч від поля вводу
+        • *НАТИСНІТЬ І ТРИМАЙТЕ* кнопку мікрофона
+        • Говоріть ваш фідбек
+        • *ВІДПУСТІТЬ* кнопку — аудіо відправиться автоматично
+
+        💻 *На комп'ютері:*
+        • Натисніть 📎 скріпку → "Записати голосове"
+        • Дозвольте доступ до мікрофона
+        • Запишіть та відправте
 
         💡 *Про що розповісти:*
-        • Що вдалося добре? Які сильні сторони?
-        • Є якісь проблеми чи виклики?
+        • Що вдалося добре? Сильні сторони?
+        • Є проблеми чи виклики?
         • Що можна покращити?
         • Загальне враження від співпраці
 
-        ⏱ *Рекомендована тривалість:* 30 секунд - 2 хвилини
+        ⏱ *Рекомендовано:* 30 сек - 2 хв
 
-        _Після відправки аудіо бот автоматично розпізнає мову та проаналізує тональність_
+        _Бот автоматично розпізнає мову (Whisper AI) та проаналізує тональність (GPT-4o mini)_
+
+        ℹ️ Натисніть "Детальна інструкція" якщо потрібна допомога
         """, parse_mode: "Markdown", reply_markup: markup)
     end
   end
@@ -245,23 +471,185 @@ defmodule FeedbackBot.Bot.Handler do
   # Обробка текстових повідомлень (для випадків коли користувач надсилає текст)
   def handle({:message, %{text: text, from: from}}, context) when not is_nil(text) do
     if authorized?(from.id) do
-      case FeedbackBot.Bot.State.get_state(from.id, :selected_employee) do
-        nil ->
-          answer(context, "👋 Натисніть /start щоб почати")
+      awaiting_action = FeedbackBot.Bot.State.get_state(from.id, :awaiting_action)
 
-        _employee_id ->
+      case awaiting_action do
+        "add_employee_name" ->
+          FeedbackBot.Bot.State.set_state(from.id, :new_employee_name, text)
+          FeedbackBot.Bot.State.set_state(from.id, :awaiting_action, "add_employee_email")
+
           answer(context, """
-          🎤 Будь ласка, надішліть голосове повідомлення, а не текст.
+          ✅ Ім'я збережено: *#{text}*
 
-          Щоб записати голосове повідомлення:
-          1. Натисніть на значок мікрофону 🎤
-          2. Запишіть ваш фідбек
-          3. Надішліть аудіо
+          *Крок 2 з 2:* Введіть email співробітника
 
-          Або натисніть /cancel щоб скасувати.
-          """)
+          📧 Приклад: olena.shevchenko@company.com
+
+          Надішліть email або /cancel
+          """, parse_mode: "Markdown")
+
+        "add_employee_email" ->
+          name = FeedbackBot.Bot.State.get_state(from.id, :new_employee_name)
+
+          case Employees.create_employee(%{name: name, email: text}) do
+            {:ok, employee} ->
+              FeedbackBot.Bot.State.clear_state(from.id)
+
+              keyboard = [
+                [%{text: "🏠 На початок", callback_data: "action:back_to_start"}],
+                [%{text: "⚙️ Управління", callback_data: "action:manage_menu"}]
+              ]
+
+              markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+              answer(context, """
+              🎉 *Співробітника успішно додано!*
+
+              👤 *Ім'я:* #{employee.name}
+              📧 *Email:* #{employee.email}
+              ✅ *Статус:* Активний
+
+              Співробітник тепер доступний для фідбеків!
+              """, parse_mode: "Markdown", reply_markup: markup)
+
+            {:error, changeset} ->
+              errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+              error_text = inspect(errors)
+
+              answer(context, """
+              ❌ *Помилка при створенні співробітника*
+
+              #{error_text}
+
+              Спробуйте ще раз або натисніть /cancel
+              """, parse_mode: "Markdown")
+          end
+
+        "edit_employee_name" ->
+          FeedbackBot.Bot.State.set_state(from.id, :new_employee_name, text)
+          FeedbackBot.Bot.State.set_state(from.id, :awaiting_action, "edit_employee_email")
+
+          answer(context, """
+          ✅ Нове ім'я збережено: *#{text}*
+
+          *Крок 2 з 2:* Введіть новий email
+
+          Надішліть email або /cancel
+          """, parse_mode: "Markdown")
+
+        "edit_employee_email" ->
+          employee_id = FeedbackBot.Bot.State.get_state(from.id, :editing_employee_id)
+          name = FeedbackBot.Bot.State.get_state(from.id, :new_employee_name)
+
+          case Employees.get_employee(employee_id) do
+            nil ->
+              answer(context, "❌ Співробітника не знайдено")
+
+            employee ->
+              case Employees.update_employee(employee, %{name: name, email: text}) do
+                {:ok, updated} ->
+                  FeedbackBot.Bot.State.clear_state(from.id)
+
+                  keyboard = [
+                    [%{text: "🏠 На початок", callback_data: "action:back_to_start"}],
+                    [%{text: "⚙️ Управління", callback_data: "action:manage_menu"}]
+                  ]
+
+                  markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+                  answer(context, """
+                  ✅ *Дані оновлено!*
+
+                  👤 *Ім'я:* #{updated.name}
+                  📧 *Email:* #{updated.email}
+                  """, parse_mode: "Markdown", reply_markup: markup)
+
+                {:error, _changeset} ->
+                  answer(context, "❌ Помилка при оновленні. Спробуйте ще раз.")
+              end
+          end
+
+        _ ->
+          case FeedbackBot.Bot.State.get_state(from.id, :selected_employee) do
+            nil ->
+              answer(context, "👋 Натисніть /start щоб почати")
+
+            _employee_id ->
+              keyboard = [
+                [
+                  %{
+                    text: "🎤 Як записати голосове?",
+                    callback_data: "help:voice_recording"
+                  }
+                ],
+                [%{text: "❌ Скасувати", callback_data: "action:back_to_start"}]
+              ]
+
+              markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+              answer(context, """
+              ⚠️ *Потрібне голосове повідомлення, а не текст!*
+
+              📱 *Як записати голосове в Telegram:*
+
+              *На телефоні:*
+              1. Знайдіть значок 🎤 мікрофона праворуч від поля вводу
+              2. Натисніть і *тримайте* кнопку мікрофона
+              3. Говоріть ваш фідбек
+              4. Відпустіть кнопку — аудіо автоматично відправиться
+
+              *На комп'ютері:*
+              1. Натисніть на скріпку 📎
+              2. Оберіть "Аудіо" або записати голосове
+              3. Запишіть та надішліть
+
+              ⏱ *Рекомендовано:* 30 секунд - 2 хвилини
+
+              Або натисніть /cancel щоб скасувати.
+              """, parse_mode: "Markdown", reply_markup: markup)
+          end
       end
     end
+  end
+
+  def handle({:callback_query, %{data: "help:voice_recording"} = query}, context) do
+    ExGram.answer_callback_query(query.id, text: "ℹ️ Інструкція")
+
+    # Відправляємо GIF-інструкцію як окреме повідомлення
+    answer(context, """
+    🎤 *ДЕТАЛЬНА ІНСТРУКЦІЯ: Як записати голосове*
+
+    📱 *ANDROID / iOS:*
+
+    1️⃣ Відкрийте цей чат
+    2️⃣ Знайдіть поле вводу повідомлень внизу
+    3️⃣ Праворуч від поля побачите значок 🎤 мікрофона
+    4️⃣ *НАТИСНІТЬ І ТРИМАЙТЕ* кнопку мікрофона
+    5️⃣ Почніть говорити свій фідбек
+    6️⃣ Коли закінчите — *ВІДПУСТІТЬ* палець
+    7️⃣ Голосове автоматично відправиться!
+
+    💻 *НА КОМП'ЮТЕРІ (Desktop/Web):*
+
+    1️⃣ Натисніть на значок 📎 скріпки
+    2️⃣ У меню оберіть "Записати голосове"
+    3️⃣ Дозвольте доступ до мікрофона
+    4️⃣ Натисніть кнопку запису
+    5️⃣ Говоріть фідбек
+    6️⃣ Натисніть "Зупинити" та "Відправити"
+
+    ⚠️ *ВАЖЛИВО:*
+    • Не відпускайте кнопку під час запису на телефоні
+    • Переконайтеся що мікрофон увімкнений
+    • Говоріть чітко та не дуже швидко
+
+    ✅ *Після відправки* бот автоматично:
+    • Розпізнає мову (Whisper AI)
+    • Проаналізує тональність (GPT-4o mini)
+    • Збереже у базу даних
+
+    ⏱ *Оптимальна тривалість:* 30 сек - 2 хв
+    """, parse_mode: "Markdown")
   end
 
   def handle(_update, _context), do: :ok
@@ -365,6 +753,81 @@ defmodule FeedbackBot.Bot.Handler do
 
       # Додаємо кнопку назад
       keyboard_with_back = keyboard ++ [[%{text: "🏠 Назад", callback_data: "action:back_to_start"}]]
+
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard_with_back}
+
+      ExGram.edit_message_reply_markup(
+        chat_id: chat_id,
+        message_id: message_id,
+        reply_markup: markup
+      )
+    end
+  end
+
+  defp show_employee_list_for_edit(_context, chat_id, message_id) do
+    employees = Employees.list_all_employees()
+
+    if Enum.empty?(employees) do
+      keyboard = [
+        [%{text: "🏠 Назад", callback_data: "action:manage_menu"}]
+      ]
+
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+      ExGram.edit_message_reply_markup(
+        chat_id: chat_id,
+        message_id: message_id,
+        reply_markup: markup
+      )
+    else
+      keyboard =
+        employees
+        |> Enum.chunk_every(2)
+        |> Enum.map(fn chunk ->
+          Enum.map(chunk, fn emp ->
+            %{text: "✏️ #{emp.name}", callback_data: "edit_emp:#{emp.id}"}
+          end)
+        end)
+
+      keyboard_with_back = keyboard ++ [[%{text: "🏠 Назад", callback_data: "action:manage_menu"}]]
+
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard_with_back}
+
+      ExGram.edit_message_reply_markup(
+        chat_id: chat_id,
+        message_id: message_id,
+        reply_markup: markup
+      )
+    end
+  end
+
+  defp show_employee_list_for_delete(_context, chat_id, message_id) do
+    employees = Employees.list_active_employees()
+
+    if Enum.empty?(employees) do
+      keyboard = [
+        [%{text: "🏠 Назад", callback_data: "action:manage_menu"}]
+      ]
+
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+      ExGram.edit_message_reply_markup(
+        chat_id: chat_id,
+        message_id: message_id,
+        reply_markup: markup
+      )
+    else
+      keyboard =
+        employees
+        |> Enum.chunk_every(2)
+        |> Enum.map(fn chunk ->
+          Enum.map(chunk, fn emp ->
+            %{text: "🗑 #{emp.name}", callback_data: "delete_emp:#{emp.id}"}
+          end)
+        end)
+
+      keyboard_with_back =
+        keyboard ++ [[%{text: "🏠 Назад", callback_data: "action:manage_menu"}]]
 
       markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard_with_back}
 

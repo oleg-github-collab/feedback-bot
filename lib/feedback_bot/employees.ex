@@ -27,6 +27,11 @@ defmodule FeedbackBot.Employees do
   end
 
   @doc """
+  Аліас для list_employees
+  """
+  def list_all_employees, do: list_employees()
+
+  @doc """
   Отримує співробітника за ID
   """
   def get_employee(id) do
