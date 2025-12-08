@@ -73,7 +73,6 @@ defmodule FeedbackBot.MixProject do
 
       # Development & Testing
       {:floki, ">= 0.36.0", only: :test},
-      {:phoenix_live_reload, "~> 1.5", only: :dev},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
