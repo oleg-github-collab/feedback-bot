@@ -13,8 +13,8 @@ defmodule FeedbackBot.Repo.Migrations.AddAdvancedIndices do
     create index(:feedbacks, [:inserted_at, :sentiment_label])
     create index(:feedbacks, [:employee_id, :sentiment_score])
 
-    # Index для швидкого пошуку по датах
-    create index(:feedbacks, [:inserted_at], order: [desc: :inserted_at])
+    # Index для швидкого пошуку по датах (DESC)
+    execute "CREATE INDEX feedbacks_inserted_at_desc_idx ON feedbacks (inserted_at DESC)"
 
     # Index для аналітики
     create index(:feedbacks, [:employee_id, :inserted_at, :sentiment_score])
@@ -24,7 +24,7 @@ defmodule FeedbackBot.Repo.Migrations.AddAdvancedIndices do
     execute "DROP INDEX IF EXISTS feedbacks_transcription_search_idx"
     drop index(:feedbacks, [:inserted_at, :sentiment_label])
     drop index(:feedbacks, [:employee_id, :sentiment_score])
-    drop index(:feedbacks, [:inserted_at], order: [desc: :inserted_at])
+    execute "DROP INDEX IF EXISTS feedbacks_inserted_at_desc_idx"
     drop index(:feedbacks, [:employee_id, :inserted_at, :sentiment_score])
   end
 end
