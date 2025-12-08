@@ -8,7 +8,7 @@ defmodule FeedbackBot.Analytics.TrendAnalyzer do
   """
 
   import Ecto.Query
-  alias FeedbackBot.{Repo, Feedbacks, Analytics}
+  alias FeedbackBot.{Repo, Feedbacks}
   alias FeedbackBot.Analytics.Snapshot
   require Logger
 

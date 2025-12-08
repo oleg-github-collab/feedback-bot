@@ -4,9 +4,6 @@ defmodule FeedbackBotWeb.CoreComponents do
   """
   use Phoenix.Component
 
-  import Phoenix.HTML
-  import FeedbackBotWeb.Gettext
-
   alias Phoenix.LiveView.JS
 
   # Use verified routes for ~p sigil

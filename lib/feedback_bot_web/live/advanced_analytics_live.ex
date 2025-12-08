@@ -321,10 +321,10 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
                 <span class="text-xs text-slate-400">Стан періоду</span>
               </div>
               <div class="space-y-6">
-                <div class="h-40" phx-hook="DistributionChart" data-title="Тональність" data-distribution={Jason.encode!(@sentiment_distribution)}></div>
+                <div id="sentiment-distribution-chart" class="h-40" phx-hook="DistributionChart" data-title="Тональність" data-distribution={Jason.encode!(@sentiment_distribution)}></div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div class="h-40" phx-hook="DistributionChart" data-title="Терміновість" data-distribution={Jason.encode!(@urgency_distribution)}></div>
-                  <div class="h-40" phx-hook="DistributionChart" data-title="Вплив" data-distribution={Jason.encode!(@impact_distribution)}></div>
+                  <div id="urgency-distribution-chart" class="h-40" phx-hook="DistributionChart" data-title="Терміновість" data-distribution={Jason.encode!(@urgency_distribution)}></div>
+                  <div id="impact-distribution-chart" class="h-40" phx-hook="DistributionChart" data-title="Вплив" data-distribution={Jason.encode!(@impact_distribution)}></div>
                 </div>
               </div>
             </div>
@@ -334,7 +334,7 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
                 <h2 class="text-xl font-black text-white">Теми та інсайти</h2>
                 <span class="text-xs text-slate-400">Top 8</span>
               </div>
-              <div class="h-60" phx-hook="TopicBarChart" data-topics={Jason.encode!(@topic_pareto)}></div>
+              <div id="topic-bar-chart" class="h-60" phx-hook="TopicBarChart" data-topics={Jason.encode!(@topic_pareto)}></div>
               <div class="mt-4">
                 <div id="word-cloud" phx-hook="WordCloud" data-words={Jason.encode!(@word_cloud_data)}></div>
               </div>
