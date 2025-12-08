@@ -17,6 +17,7 @@ defmodule FeedbackBot.Bot.Handler do
 
   require Logger
   alias FeedbackBot.{Employees, Feedbacks, AI}
+  import ExGram.Dsl.Keyboard
 
   command("start")
   command("help")
@@ -73,13 +74,13 @@ defmodule FeedbackBot.Bot.Handler do
 
     case Employees.get_employee(employee_id) do
       nil ->
-        answer_callback_query(context, text: "❌ Співробітника не знайдено")
+        ExGram.answer_callback_query(query.id, text: "❌ Співробітника не знайдено")
 
       employee ->
         # Зберігаємо обраного співробітника в стані
         FeedbackBot.Bot.State.set_state(user_id, :selected_employee, employee_id)
 
-        answer_callback_query(context, text: "✅ Обрано: #{employee.name}")
+        ExGram.answer_callback_query(query.id, text: "✅ Обрано: #{employee.name}")
 
         edit(context, query.message, """
         ✅ Ви обрали: *#{employee.name}*
