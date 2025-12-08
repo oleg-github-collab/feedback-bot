@@ -1,11 +1,13 @@
 # Build stage
 FROM hexpm/elixir:1.17.3-erlang-27.1.2-debian-bookworm-20241016-slim AS builder
 
-# Install build dependencies
+# Install build dependencies including Node.js for npm
 RUN apt-get update -y && apt-get install -y \
     build-essential \
     git \
     curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # Set working directory
@@ -38,6 +40,8 @@ RUN mix compile
 
 # Build assets (if any)
 COPY assets assets
+COPY package.json package-lock.json* ./
+RUN cd assets && npm ci --prefer-offline --no-audit
 RUN mix assets.deploy
 
 # Build release
