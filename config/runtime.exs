@@ -14,12 +14,39 @@ if config_env() == :prod do
   database_opts =
     if database_url do
       uri = URI.parse(database_url)
+
+      # Extract database name from path
+      database = case uri.path do
+        nil -> "railway"
+        "" -> "railway"
+        "/" -> "railway"
+        path -> String.trim_leading(path, "/")
+      end
+
+      # Extract username and password
+      {username, password} = case uri.userinfo do
+        nil -> {nil, nil}
+        userinfo ->
+          case String.split(userinfo, ":", parts: 2) do
+            [user, pass] -> {user, pass}
+            [user] -> {user, nil}
+            _ -> {nil, nil}
+          end
+      end
+
+      IO.puts("=== DATABASE CONFIG DEBUG ===")
+      IO.puts("Host: #{uri.host}")
+      IO.puts("Port: #{uri.port || 5432}")
+      IO.puts("Database: #{database}")
+      IO.puts("Username: #{username}")
+      IO.puts("=============================")
+
       [
         hostname: uri.host,
         port: uri.port || 5432,
-        database: String.trim_leading(uri.path || "/railway", "/"),
-        username: uri.userinfo && String.split(uri.userinfo, ":") |> List.first(),
-        password: uri.userinfo && String.split(uri.userinfo, ":") |> List.last(),
+        database: database,
+        username: username,
+        password: password,
         pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
         socket_options: maybe_ipv6,
         ssl: true,
