@@ -10,10 +10,22 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
+  # Parse DATABASE_URL to ensure it has all required components
+  database_config = case database_url do
+    "postgres://" <> _ -> [url: database_url]
+    "postgresql://" <> _ -> [url: database_url]
+    _ -> raise "Invalid DATABASE_URL format"
+  end
+
   config :feedback_bot, FeedbackBot.Repo,
-    url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-    socket_options: maybe_ipv6
+    database_config ++
+    [
+      pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+      socket_options: maybe_ipv6,
+      ssl: true,
+      ssl_opts: [verify: :verify_none],
+      show_sensitive_data_on_connection_error: true
+    ]
 
   secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
