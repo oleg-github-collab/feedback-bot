@@ -16,6 +16,7 @@ defmodule FeedbackBotWeb.EmployeeDetailLive do
     socket =
       socket
       |> assign(:page_title, "Деталі: #{employee.name}")
+      |> assign(:active_nav, "/employees")
       |> assign(:employee, employee)
       |> assign(:feedbacks, feedbacks)
       |> assign(:stats_30d, stats_30d)
@@ -29,6 +30,7 @@ defmodule FeedbackBotWeb.EmployeeDetailLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-zinc-50">
+      <.top_nav active={@active_nav} />
       <header class="border-b-4 border-black bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <.link navigate="/employees" class="text-sm font-bold hover:underline mb-2 inline-block">

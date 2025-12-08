@@ -20,6 +20,7 @@ defmodule FeedbackBotWeb.DashboardLive do
       socket =
         socket
         |> assign(:page_title, "Dashboard")
+        |> assign(:active_nav, "/")
         |> assign(:daily_snapshot, latest_daily)
         |> assign(:weekly_snapshot, latest_weekly)
         |> assign(:monthly_snapshot, latest_monthly)
@@ -32,11 +33,12 @@ defmodule FeedbackBotWeb.DashboardLive do
       {:ok,
        socket
        |> assign(:page_title, "Dashboard")
+       |> assign(:active_nav, "/")
        |> assign(:daily_snapshot, nil)
        |> assign(:weekly_snapshot, nil)
        |> assign(:monthly_snapshot, nil)
        |> assign(:recent_feedbacks, [])
-       |> assign(:employees, [])
+        |> assign(:employees, [])
        |> assign(:sentiment_trend, [])}
     end
   end
@@ -45,6 +47,7 @@ defmodule FeedbackBotWeb.DashboardLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50">
+      <.top_nav active={@active_nav} />
       <!-- Header -->
       <header class="bg-white shadow-lg border-b-4 border-violet-600">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -57,32 +60,6 @@ defmodule FeedbackBotWeb.DashboardLive do
                 AI-powered Analytics & Insights
               </p>
             </div>
-            <nav class="hidden md:flex gap-4">
-              <.link
-                navigate={~p"/"}
-                class="px-6 py-3 rounded-xl font-bold bg-violet-600 text-white hover:bg-violet-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                🏠 Dashboard
-              </.link>
-              <.link
-                navigate={~p"/record"}
-                class="px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:from-pink-600 hover:to-rose-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                🎤 Записати
-              </.link>
-              <.link
-                navigate={~p"/employees"}
-                class="px-6 py-3 rounded-xl font-bold bg-white text-violet-600 border-2 border-violet-600 hover:bg-violet-50 transition-all"
-              >
-                👥 Команда
-              </.link>
-              <.link
-                navigate={~p"/analytics"}
-                class="px-6 py-3 rounded-xl font-bold bg-white text-violet-600 border-2 border-violet-600 hover:bg-violet-50 transition-all"
-              >
-                📈 Аналітика
-              </.link>
-            </nav>
           </div>
         </div>
       </header>

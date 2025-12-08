@@ -238,3 +238,197 @@ export const WordCloud = {
     this.el.appendChild(svg);
   }
 };
+
+export const VolumeSentimentChart = {
+  mounted() {
+    this.chart = null;
+    this.renderChart();
+  },
+  updated() {
+    this.renderChart();
+  },
+  destroyed() {
+    if (this.chart) this.chart.destroy();
+  },
+  renderChart() {
+    const data = JSON.parse(this.el.dataset.volumeSentiment || '[]');
+    const labels = data.map(d => new Date(d.date).toLocaleDateString());
+    const counts = data.map(d => d.count || 0);
+    const sentiments = data.map(d => d.avg_sentiment || 0);
+
+    const canvas = document.createElement('canvas');
+    this.el.innerHTML = '';
+    this.el.appendChild(canvas);
+
+    if (this.chart) this.chart.destroy();
+
+    this.chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Кількість',
+            data: counts,
+            backgroundColor: 'rgba(16, 185, 129, 0.5)',
+            borderColor: 'rgba(16, 185, 129, 0.9)',
+            borderWidth: 1,
+            yAxisID: 'y'
+          },
+          {
+            type: 'line',
+            label: 'Sentiment',
+            data: sentiments,
+            borderColor: 'rgba(59, 130, 246, 0.9)',
+            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+            tension: 0.35,
+            yAxisID: 'y1',
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: 'top'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(148, 163, 184, 0.15)' }
+          },
+          y1: {
+            position: 'right',
+            min: -1,
+            max: 1,
+            grid: { drawOnChartArea: false }
+          },
+          x: {
+            grid: { color: 'rgba(148, 163, 184, 0.15)' }
+          }
+        }
+      }
+    });
+  }
+};
+
+export const DistributionChart = {
+  mounted() {
+    this.chart = null;
+    this.renderChart();
+  },
+  updated() {
+    this.renderChart();
+  },
+  destroyed() {
+    if (this.chart) this.chart.destroy();
+  },
+  renderChart() {
+    const data = JSON.parse(this.el.dataset.distribution || '[]');
+    const title = this.el.dataset.title || '';
+
+    const canvas = document.createElement('canvas');
+    this.el.innerHTML = '';
+    this.el.appendChild(canvas);
+
+    if (this.chart) this.chart.destroy();
+
+    this.chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: data.map(d => d.label),
+        datasets: [
+          {
+            label: title,
+            data: data.map(d => d.value || 0),
+            backgroundColor: data.map(d => d.color || 'rgba(99, 102, 241, 0.6)'),
+            borderColor: data.map(d => d.color || 'rgba(99, 102, 241, 0.9)'),
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: { color: 'rgba(148, 163, 184, 0.15)' }
+          },
+          y: {
+            grid: { color: 'rgba(148, 163, 184, 0.1)' }
+          }
+        }
+      }
+    });
+  }
+};
+
+export const TopicBarChart = {
+  mounted() {
+    this.chart = null;
+    this.renderChart();
+  },
+  updated() {
+    this.renderChart();
+  },
+  destroyed() {
+    if (this.chart) this.chart.destroy();
+  },
+  renderChart() {
+    const data = JSON.parse(this.el.dataset.topics || '[]');
+    const labels = data.map(d => d.label);
+    const values = data.map(d => d.value || 0);
+
+    const canvas = document.createElement('canvas');
+    this.el.innerHTML = '';
+    this.el.appendChild(canvas);
+
+    if (this.chart) this.chart.destroy();
+
+    this.chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Згадувань',
+            data: values,
+            backgroundColor: 'rgba(244, 114, 182, 0.7)',
+            borderColor: 'rgba(244, 114, 182, 0.9)',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: { color: 'rgba(148, 163, 184, 0.15)' }
+          },
+          y: {
+            grid: { color: 'rgba(148, 163, 184, 0.1)' }
+          }
+        }
+      }
+    });
+  }
+};

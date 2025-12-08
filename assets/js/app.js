@@ -7,7 +7,15 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
 // Import advanced chart hooks
-import { HeatmapChart, TrendChart, ComparisonChart, WordCloud } from "./hooks/charts"
+import {
+  HeatmapChart,
+  TrendChart,
+  ComparisonChart,
+  WordCloud,
+  VolumeSentimentChart,
+  DistributionChart,
+  TopicBarChart
+} from "./hooks/charts"
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
@@ -18,6 +26,9 @@ Hooks.HeatmapChart = HeatmapChart
 Hooks.TrendChart = TrendChart
 Hooks.ComparisonChart = ComparisonChart
 Hooks.WordCloud = WordCloud
+Hooks.VolumeSentimentChart = VolumeSentimentChart
+Hooks.DistributionChart = DistributionChart
+Hooks.TopicBarChart = TopicBarChart
 
 // Simple chart hook for backward compatibility
 Hooks.SentimentChart = {

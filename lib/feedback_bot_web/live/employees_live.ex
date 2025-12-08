@@ -11,6 +11,7 @@ defmodule FeedbackBotWeb.EmployeesLive do
     socket =
       socket
       |> assign(:page_title, "Управління Співробітниками")
+      |> assign(:active_nav, "/employees")
       |> assign(:employees, employees)
       |> assign(:show_form, false)
       |> assign(:form_data, %{})
@@ -106,6 +107,7 @@ defmodule FeedbackBotWeb.EmployeesLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-zinc-50">
+      <.top_nav active={@active_nav} />
       <header class="border-b-4 border-black bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div class="flex justify-between items-center">

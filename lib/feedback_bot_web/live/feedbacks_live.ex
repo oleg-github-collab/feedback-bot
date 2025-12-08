@@ -10,6 +10,7 @@ defmodule FeedbackBotWeb.FeedbacksLive do
     socket =
       socket
       |> assign(:page_title, "Фідбеки")
+      |> assign(:active_nav, "/feedbacks")
       |> assign(:feedbacks, feedbacks)
 
     {:ok, socket}
@@ -19,6 +20,7 @@ defmodule FeedbackBotWeb.FeedbacksLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-zinc-50">
+      <.top_nav active={@active_nav} />
       <header class="border-b-4 border-black bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <.link navigate="/" class="text-sm font-bold hover:underline mb-2 inline-block">

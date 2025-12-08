@@ -222,9 +222,7 @@ defmodule FeedbackBot.Feedbacks do
   @doc """
   Отримати word frequency для word cloud
   """
-  def get_word_frequencies(filters \\ %{}) do
-    feedbacks = filter_feedbacks(filters)
-
+  def get_word_frequencies(feedbacks) when is_list(feedbacks) do
     feedbacks
     |> Enum.flat_map(fn f ->
       (f.transcription || "")
@@ -236,6 +234,13 @@ defmodule FeedbackBot.Feedbacks do
     |> Enum.frequencies()
     |> Enum.sort_by(fn {_word, count} -> count end, :desc)
     |> Enum.take(100)
+  end
+
+  def get_word_frequencies(filters \\ %{}) do
+    feedbacks = filter_feedbacks(filters)
+
+    feedbacks
+    |> get_word_frequencies()
   end
 
   @doc """

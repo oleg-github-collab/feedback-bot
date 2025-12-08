@@ -12,6 +12,7 @@ defmodule FeedbackBotWeb.AnalyticsLive do
     socket =
       socket
       |> assign(:page_title, "Аналітика")
+      |> assign(:active_nav, "/analytics/basic")
       |> assign(:daily_snapshots, daily_snapshots)
       |> assign(:weekly_snapshots, weekly_snapshots)
       |> assign(:monthly_snapshots, monthly_snapshots)
@@ -29,6 +30,7 @@ defmodule FeedbackBotWeb.AnalyticsLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-zinc-50">
+      <.top_nav active={@active_nav} />
       <header class="border-b-4 border-black bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <.link navigate="/" class="text-sm font-bold hover:underline mb-2 inline-block">
