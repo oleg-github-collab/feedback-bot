@@ -4,7 +4,7 @@ defmodule FeedbackBot.Jobs.ProcessAudioJob do
   """
   use Oban.Worker, queue: :audio_processing, max_attempts: 3
 
-  alias FeedbackBot.{AI, Employees, Feedbacks, Repo}
+  alias FeedbackBot.{AI, Employees, Feedbacks}
   require Logger
 
   @impl Oban.Worker

@@ -2,9 +2,17 @@ defmodule FeedbackBotWeb.CoreComponents do
   @moduledoc """
   Базові UI компоненти в необруталістичному стилі
   """
-  use FeedbackBotWeb, :html
+  use Phoenix.Component
+
+  import Phoenix.HTML
+  import FeedbackBotWeb.Gettext
 
   alias Phoenix.LiveView.JS
+
+  # Import verified routes for ~p sigil
+  import Phoenix.VerifiedRoutes,
+    endpoint: FeedbackBotWeb.Endpoint,
+    router: FeedbackBotWeb.Router
 
   @doc """
   Renders flash notices.

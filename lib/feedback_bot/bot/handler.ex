@@ -213,7 +213,7 @@ defmodule FeedbackBot.Bot.Handler do
   end
 
   # Обробка callback query від inline кнопок
-  def handle({:callback_query, %{data: "action:start_feedback"} = query}, context) do
+  def handle({:callback_query, %{data: "action:start_feedback"} = query}, _context) do
     ExGram.answer_callback_query(query.id, text: "✅ Починаємо запис фідбеку")
 
     employees = Employees.list_active_employees()
@@ -265,7 +265,7 @@ defmodule FeedbackBot.Bot.Handler do
     end
   end
 
-  def handle({:callback_query, %{data: "action:back_to_start"} = query}, context) do
+  def handle({:callback_query, %{data: "action:back_to_start"} = query}, _context) do
     user_id = query.from.id
     FeedbackBot.Bot.State.clear_state(user_id)
 
@@ -306,7 +306,7 @@ defmodule FeedbackBot.Bot.Handler do
   end
 
   # Обробка управління співробітниками
-  def handle({:callback_query, %{data: "manage:add_employee"} = query}, context) do
+  def handle({:callback_query, %{data: "manage:add_employee"} = query}, _context) do
     user_id = query.from.id
     FeedbackBot.Bot.State.set_state(user_id, :awaiting_action, "add_employee_name")
 
@@ -364,7 +364,7 @@ defmodule FeedbackBot.Bot.Handler do
     show_employee_list_for_delete(context, query.message.chat.id, query.message.message_id)
   end
 
-  def handle({:callback_query, %{data: "manage:list_all"} = query}, context) do
+  def handle({:callback_query, %{data: "manage:list_all"} = query}, _context) do
     employees = Employees.list_all_employees()
 
     ExGram.answer_callback_query(query.id, text: "👥 Список співробітників")
@@ -400,7 +400,7 @@ defmodule FeedbackBot.Bot.Handler do
     )
   end
 
-  def handle({:callback_query, %{data: "edit_emp:" <> employee_id} = query}, context) do
+  def handle({:callback_query, %{data: "edit_emp:" <> employee_id} = query}, _context) do
     user_id = query.from.id
 
     case Employees.get_employee(employee_id) do
@@ -439,7 +439,7 @@ defmodule FeedbackBot.Bot.Handler do
     end
   end
 
-  def handle({:callback_query, %{data: "delete_emp:" <> employee_id} = query}, context) do
+  def handle({:callback_query, %{data: "delete_emp:" <> employee_id} = query}, _context) do
     case Employees.get_employee(employee_id) do
       nil ->
         ExGram.answer_callback_query(query.id, text: "❌ Співробітника не знайдено")
@@ -476,7 +476,7 @@ defmodule FeedbackBot.Bot.Handler do
     end
   end
 
-  def handle({:callback_query, %{data: "action:manage_menu"} = query}, context) do
+  def handle({:callback_query, %{data: "action:manage_menu"} = query}, _context) do
     ExGram.answer_callback_query(query.id, text: "⚙️ Меню управління")
 
     keyboard = [
@@ -519,7 +519,7 @@ defmodule FeedbackBot.Bot.Handler do
     )
   end
 
-  def handle({:callback_query, %{data: "employee:" <> employee_id} = query}, context) do
+  def handle({:callback_query, %{data: "employee:" <> employee_id} = query}, _context) do
     user_id = query.from.id
 
     case Employees.get_employee(employee_id) do
