@@ -98,8 +98,45 @@ defmodule FeedbackBot.Bot.Handler do
     """)
   end
 
-  def handle({:command, :list, _msg}, context) do
-    show_employee_list(context)
+  def handle({:command, :list, %{from: from}}, context) do
+    if authorized?(from.id) do
+      employees = Employees.list_active_employees()
+
+      if Enum.empty?(employees) do
+        answer(context, """
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ❌ *НЕМАЄ АКТИВНИХ СПІВРОБІТНИКІВ*
+
+        Додайте співробітників через /manage
+        """, parse_mode: "Markdown")
+      else
+        keyboard =
+          employees
+          |> Enum.chunk_every(2)
+          |> Enum.map(fn chunk ->
+            Enum.map(chunk, fn emp ->
+              %{text: "👤 #{emp.name}", callback_data: "employee:#{emp.id}"}
+            end)
+          end)
+
+        keyboard_with_back = keyboard ++ [[%{text: "🏠 На початок", callback_data: "action:back_to_start"}]]
+        markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard_with_back}
+
+        answer(context, """
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        *ПРОГРЕС: 1 з 3 кроків* ⬤○○
+
+        🎤 *КРОК 1: ОБЕРІТЬ СПІВРОБІТНИКА*
+
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        👥 *Про кого ви хочете залишити фідбек?*
+
+        Натисніть на ім'я співробітника зі списку:
+        """, parse_mode: "Markdown", reply_markup: markup)
+      end
+    else
+      answer(context, "⛔️ У вас немає доступу до цього бота.")
+    end
   end
 
   def handle({:command, :analytics, _msg}, context) do
@@ -179,19 +216,42 @@ defmodule FeedbackBot.Bot.Handler do
   def handle({:callback_query, %{data: "action:start_feedback"} = query}, context) do
     ExGram.answer_callback_query(query.id, text: "✅ Починаємо запис фідбеку")
 
-    edit(context, query.message, """
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    *ПРОГРЕС: 1 з 3 кроків* ⬤○○
+    employees = Employees.list_active_employees()
 
-    🎤 *КРОК 1: ОБЕРІТЬ СПІВРОБІТНИКА*
+    if Enum.empty?(employees) do
+      edit(context, query.message, """
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      ❌ *НЕМАЄ СПІВРОБІТНИКІВ*
 
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    👥 Про кого ви хочете залишити фідбек?
+      Спочатку додайте співробітників через команду /manage
 
-    Натисніть на ім'я співробітника нижче:
-    """, parse_mode: "Markdown")
+      Або попросіть адміністратора додати їх.
+      """, parse_mode: "Markdown")
+    else
+      keyboard =
+        employees
+        |> Enum.chunk_every(2)
+        |> Enum.map(fn chunk ->
+          Enum.map(chunk, fn emp ->
+            %{text: "👤 #{emp.name}", callback_data: "employee:#{emp.id}"}
+          end)
+        end)
 
-    show_employee_list_inline(context, query.message.chat.id, query.message.message_id)
+      keyboard_with_back = keyboard ++ [[%{text: "🏠 Повернутись на початок", callback_data: "action:back_to_start"}]]
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard_with_back}
+
+      edit(context, query.message, """
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      *ПРОГРЕС: 1 з 3 кроків* ⬤○○
+
+      🎤 *КРОК 1: ОБЕРІТЬ СПІВРОБІТНИКА*
+
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      👥 *Про кого ви хочете залишити фідбек?*
+
+      Натисніть на ім'я співробітника зі списку:
+      """, parse_mode: "Markdown", reply_markup: markup)
+    end
   end
 
   def handle({:callback_query, %{data: "action:back_to_start"} = query}, context) do
@@ -713,73 +773,7 @@ defmodule FeedbackBot.Bot.Handler do
     end
   end
 
-  defp show_employee_list(context) do
-    employees = Employees.list_active_employees()
 
-    if Enum.empty?(employees) do
-      answer(context, """
-      ❌ Немає активних співробітників у системі.
-
-      Додайте співробітників через веб-інтерфейс.
-      """)
-    else
-      keyboard =
-        employees
-        |> Enum.chunk_every(2)
-        |> Enum.map(fn chunk ->
-          Enum.map(chunk, fn emp ->
-            %{text: emp.name, callback_data: "employee:#{emp.id}"}
-          end)
-        end)
-
-      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
-
-      answer(context, "👥 Оберіть співробітника:", reply_markup: markup)
-    end
-  end
-
-  defp show_employee_list_inline(context, chat_id, message_id) do
-    employees = Employees.list_active_employees()
-
-    if Enum.empty?(employees) do
-      keyboard = [
-        [%{text: "🏠 Повернутись на початок", callback_data: "action:back_to_start"}]
-      ]
-
-      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
-
-      ExGram.edit_message_text(
-        """
-        ❌ Немає активних співробітників у системі.
-
-        Додайте співробітників через веб-інтерфейс.
-        """,
-        chat_id: chat_id,
-        message_id: message_id,
-        reply_markup: markup
-      )
-    else
-      keyboard =
-        employees
-        |> Enum.chunk_every(2)
-        |> Enum.map(fn chunk ->
-          Enum.map(chunk, fn emp ->
-            %{text: "👤 #{emp.name}", callback_data: "employee:#{emp.id}"}
-          end)
-        end)
-
-      # Додаємо кнопку назад
-      keyboard_with_back = keyboard ++ [[%{text: "🏠 Назад", callback_data: "action:back_to_start"}]]
-
-      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard_with_back}
-
-      ExGram.edit_message_reply_markup(
-        chat_id: chat_id,
-        message_id: message_id,
-        reply_markup: markup
-      )
-    end
-  end
 
   defp show_employee_list_for_edit(_context, chat_id, message_id) do
     employees = Employees.list_all_employees()
