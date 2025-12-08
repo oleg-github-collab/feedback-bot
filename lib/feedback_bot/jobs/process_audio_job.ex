@@ -90,7 +90,7 @@ defmodule FeedbackBot.Jobs.ProcessAudioJob do
   defp download_audio(file_id) do
     with {:ok, file} <- ExGram.get_file(file_id),
          _ = Logger.info("Got file info: #{inspect(file)}"),
-         file_path <- ExGram.File.file_path(file),
+         file_path = file.file_path,
          _ = Logger.info("File path: #{file_path}"),
          {:ok, response} <- ExGram.download_file(file_path),
          _ = Logger.info("Downloaded file, size: #{byte_size(response.body)} bytes") do
