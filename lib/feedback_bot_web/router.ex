@@ -18,6 +18,7 @@ defmodule FeedbackBotWeb.Router do
     pipe_through :browser
 
     live "/", DashboardLive
+    live "/record", RecordFeedbackLive
     live "/employees", EmployeesLive
     live "/employees/:id", EmployeeDetailLive
     live "/feedbacks", FeedbacksLive

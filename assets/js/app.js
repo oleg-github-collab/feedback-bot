@@ -33,6 +33,68 @@ Hooks.SentimentChart = {
   }
 }
 
+// Audio Recorder Hook
+Hooks.AudioRecorder = {
+  mounted() {
+    this.mediaRecorder = null
+    this.audioChunks = []
+    this.isRecording = false
+
+    this.el.addEventListener('click', () => {
+      if (!this.isRecording) {
+        this.startRecording()
+      } else {
+        this.stopRecording()
+      }
+    })
+  },
+
+  async startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      this.mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      })
+
+      this.audioChunks = []
+
+      this.mediaRecorder.addEventListener('dataavailable', event => {
+        this.audioChunks.push(event.data)
+      })
+
+      this.mediaRecorder.addEventListener('stop', () => {
+        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' })
+        this.uploadAudio(audioBlob)
+      })
+
+      this.mediaRecorder.start()
+      this.isRecording = true
+      this.pushEvent('start_recording', {})
+    } catch (error) {
+      console.error('Error accessing microphone:', error)
+      alert('Не вдалося отримати доступ до мікрофона. Переконайтеся що ви дозволили доступ.')
+    }
+  },
+
+  stopRecording() {
+    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+      this.mediaRecorder.stop()
+      this.mediaRecorder.stream.getTracks().forEach(track => track.stop())
+      this.isRecording = false
+      this.pushEvent('stop_recording', {})
+    }
+  },
+
+  async uploadAudio(audioBlob) {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64Audio = reader.result.split(',')[1]
+      this.pushEvent('audio_uploaded', { audio_data: base64Audio })
+    }
+    reader.readAsDataURL(audioBlob)
+  }
+}
+
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},

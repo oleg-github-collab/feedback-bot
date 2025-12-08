@@ -65,10 +65,16 @@ defmodule FeedbackBotWeb.DashboardLive do
                 🏠 Dashboard
               </.link>
               <.link
+                navigate={~p"/record"}
+                class="px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:from-pink-600 hover:to-rose-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                🎤 Записати
+              </.link>
+              <.link
                 navigate={~p"/employees"}
                 class="px-6 py-3 rounded-xl font-bold bg-white text-violet-600 border-2 border-violet-600 hover:bg-violet-50 transition-all"
               >
-                👥 Співробітники
+                👥 Команда
               </.link>
               <.link
                 navigate={~p"/analytics"}
