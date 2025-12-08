@@ -22,21 +22,47 @@ defmodule FeedbackBot.Bot.Handler do
   command("start")
   command("help")
   command("list")
+  command("analytics")
   command("cancel")
 
   middleware(ExGram.Middleware.IgnoreUsername)
 
   def bot(), do: FeedbackBot.Bot.Handler
 
+  # Встановлюємо Menu Button при старті
+  def setup_menu_button do
+    token = Application.fetch_env!(:ex_gram, :token)
+
+    # Встановлюємо Web App як menu button для всіх користувачів
+    ExGram.set_chat_menu_button(
+      menu_button: %{
+        type: "web_app",
+        text: "📊 Аналітика",
+        web_app: %{url: "https://feedback-bot-production-5dda.up.railway.app"}
+      },
+      token: token
+    )
+  end
+
   def handle({:command, :start, %{from: from}}, context) do
     if authorized?(from.id) do
+      # Створюємо Web App кнопку
+      web_app_button = [
+        [
+          %{
+            text: "📊 Відкрити Аналітику",
+            web_app: %{url: "https://feedback-bot-production-5dda.up.railway.app"}
+          }
+        ]
+      ]
+
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: web_app_button}
+
       answer(context, """
       👋 Вітаю! Це бот для збору голосового фідбеку про роботу співробітників.
 
-      🎤 Оберіть співробітника зі списку нижче, щоб записати фідбек:
-      """)
-
-      show_employee_list(context)
+      📊 Натисніть кнопку нижче щоб відкрити веб-аналітику, або оберіть /list щоб почати запис фідбеку.
+      """, reply_markup: markup)
     else
       answer(context, "⛔️ У вас немає доступу до цього бота.")
     end
@@ -53,6 +79,7 @@ defmodule FeedbackBot.Bot.Handler do
 
     ℹ️ Команди:
     /list - Показати список співробітників
+    /analytics - Відкрити веб-аналітику
     /cancel - Скасувати поточну дію
     /help - Показати цю довідку
     """)
@@ -60,6 +87,34 @@ defmodule FeedbackBot.Bot.Handler do
 
   def handle({:command, :list, _msg}, context) do
     show_employee_list(context)
+  end
+
+  def handle({:command, :analytics, _msg}, context) do
+    web_app_button = [
+      [
+        %{
+          text: "📊 Відкрити Веб-Аналітику",
+          web_app: %{url: "https://feedback-bot-production-5dda.up.railway.app"}
+        }
+      ]
+    ]
+
+    markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: web_app_button}
+
+    answer(context, """
+    📊 *Аналітика та Звіти*
+
+    Натисніть кнопку нижче щоб відкрити веб-інтерфейс з повною аналітикою:
+
+    📈 Доступні розділи:
+    • Головна статистика
+    • Список співробітників
+    • Всі фідбеки
+    • Розширена аналітика з графіками
+    • Аналіз по періодах
+
+    🔐 Дані доступні тільки авторизованим користувачам.
+    """, parse_mode: "Markdown", reply_markup: markup)
   end
 
   def handle({:command, :cancel, _msg}, context) do

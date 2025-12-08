@@ -9,6 +9,12 @@ defmodule FeedbackBot.Bot.Supervisor do
   def init(_init_arg) do
     token = fetch_token()
 
+    # Встановлюємо Menu Button для веб-апп
+    Task.start(fn ->
+      Process.sleep(2000)
+      FeedbackBot.Bot.Handler.setup_menu_button()
+    end)
+
     children = [
       {FeedbackBot.Bot.Handler, [method: :polling, token: token]}
     ]
