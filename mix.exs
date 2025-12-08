@@ -32,6 +32,7 @@ defmodule FeedbackBot.MixProject do
       {:phoenix_live_reload, "~> 1.5", only: :dev},
       {:phoenix_live_view, "~> 0.20.17"},
       {:phoenix_live_dashboard, "~> 0.8.4"},
+      {:plug_cowboy, "~> 2.7"},
 
       # Database
       {:ecto_sql, "~> 3.11"},
