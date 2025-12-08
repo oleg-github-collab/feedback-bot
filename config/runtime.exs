@@ -5,27 +5,34 @@ if config_env() == :prod do
     System.get_env("DATABASE_URL") ||
       raise """
       environment variable DATABASE_URL is missing.
-      For example: ecto://USER:PASS@HOST/DATABASE
+      For example: postgresql://USER:PASS@HOST/DATABASE
       """
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
-  # Parse DATABASE_URL to ensure it has all required components
-  database_config = case database_url do
-    "postgres://" <> _ -> [url: database_url]
-    "postgresql://" <> _ -> [url: database_url]
-    _ -> raise "Invalid DATABASE_URL format"
-  end
+  # Parse DATABASE_URL manually to extract components
+  database_opts =
+    if database_url do
+      uri = URI.parse(database_url)
+      [
+        hostname: uri.host,
+        port: uri.port || 5432,
+        database: String.trim_leading(uri.path || "/railway", "/"),
+        username: uri.userinfo && String.split(uri.userinfo, ":") |> List.first(),
+        password: uri.userinfo && String.split(uri.userinfo, ":") |> List.last(),
+        pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+        socket_options: maybe_ipv6,
+        ssl: true,
+        ssl_opts: [verify: :verify_none],
+        show_sensitive_data_on_connection_error: true,
+        queue_target: 5000,
+        queue_interval: 1000
+      ]
+    else
+      []
+    end
 
-  config :feedback_bot, FeedbackBot.Repo,
-    database_config ++
-    [
-      pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-      socket_options: maybe_ipv6,
-      ssl: true,
-      ssl_opts: [verify: :verify_none],
-      show_sensitive_data_on_connection_error: true
-    ]
+  config :feedback_bot, FeedbackBot.Repo, database_opts
 
   secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
