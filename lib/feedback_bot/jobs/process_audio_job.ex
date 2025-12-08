@@ -89,15 +89,21 @@ defmodule FeedbackBot.Jobs.ProcessAudioJob do
 
   defp download_audio(file_id) do
     with {:ok, file} <- ExGram.get_file(file_id),
+         _ = Logger.info("Got file info: #{inspect(file)}"),
          file_path <- ExGram.File.file_path(file),
-         {:ok, response} <- ExGram.download_file(file_path) do
+         _ = Logger.info("File path: #{file_path}"),
+         {:ok, response} <- ExGram.download_file(file_path),
+         _ = Logger.info("Downloaded file, size: #{byte_size(response.body)} bytes") do
       # Зберігаємо файл локально
       local_path = Path.join([System.tmp_dir!(), "#{file_id}.ogg"])
       File.write!(local_path, response.body)
+      Logger.info("Saved to: #{local_path}")
 
       {:ok, local_path}
     else
-      error -> {:error, "Failed to download audio: #{inspect(error)}"}
+      error ->
+        Logger.error("Download failed: #{inspect(error, pretty: true, limit: :infinity)}")
+        {:error, "Failed to download audio: #{inspect(error)}"}
     end
   end
 
