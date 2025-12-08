@@ -88,15 +88,19 @@ defmodule FeedbackBot.Jobs.ProcessAudioJob do
   end
 
   defp download_audio(file_id) do
+    token = Application.fetch_env!(:ex_gram, :token)
+
     with {:ok, file} <- ExGram.get_file(file_id),
          _ = Logger.info("Got file info: #{inspect(file)}"),
          file_path = file.file_path,
          _ = Logger.info("File path: #{file_path}"),
-         {:ok, response} <- ExGram.download_file(file_path),
-         _ = Logger.info("Downloaded file, size: #{byte_size(response.body)} bytes") do
+         download_url = "https://api.telegram.org/file/bot#{token}/#{file_path}",
+         _ = Logger.info("Download URL: #{download_url}"),
+         {:ok, %{status: 200, body: body}} <- HTTPoison.get(download_url),
+         _ = Logger.info("Downloaded file, size: #{byte_size(body)} bytes") do
       # Зберігаємо файл локально
       local_path = Path.join([System.tmp_dir!(), "#{file_id}.ogg"])
-      File.write!(local_path, response.body)
+      File.write!(local_path, body)
       Logger.info("Saved to: #{local_path}")
 
       {:ok, local_path}
