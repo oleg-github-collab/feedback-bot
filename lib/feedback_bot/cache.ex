@@ -3,12 +3,12 @@ defmodule FeedbackBot.Cache do
   Redis-backed cache для оптимізації швидкості запитів
   """
 
-  @redis_url Application.compile_env(:feedback_bot, :redis_url, "redis://localhost:6379")
-
   def child_spec(_opts) do
+    redis_url = Application.get_env(:feedback_bot, :redis_url, "redis://localhost:6379")
+
     %{
       id: __MODULE__,
-      start: {Redix, :start_link, [@redis_url, [name: __MODULE__]]}
+      start: {Redix, :start_link, [redis_url, [name: __MODULE__]]}
     }
   end
 
