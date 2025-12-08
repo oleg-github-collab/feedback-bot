@@ -12,15 +12,8 @@ if config_env() == :prod do
     password: System.get_env("PGPASSWORD") || raise("PGPASSWORD is required"),
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     socket_options: maybe_ipv6,
-    # Railway Postgres requires SSL with custom verification
-    ssl: true,
-    ssl_opts: [
-      verify: :verify_peer,
-      cacerts: :public_key.cacerts_get(),
-      verify_fun: {fn _, _, _ -> {:valid, :ok} end, :ok},
-      server_name_indication: :disable,
-      customize_hostname_check: []
-    ],
+    # Disable SSL for Railway internal network
+    ssl: false,
     show_sensitive_data_on_connection_error: true,
     queue_target: 5000,
     queue_interval: 1000
