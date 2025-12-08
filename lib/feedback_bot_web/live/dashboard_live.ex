@@ -44,16 +44,40 @@ defmodule FeedbackBotWeb.DashboardLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-zinc-50">
+    <div class="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50">
       <!-- Header -->
-      <header class="border-b-4 border-black bg-white">
+      <header class="bg-white shadow-lg border-b-4 border-violet-600">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 class="text-5xl font-black uppercase tracking-tight">
-            Feedback Dashboard
-          </h1>
-          <p class="mt-2 text-lg font-bold">
-            Аналітика голосового фідбеку співробітників
-          </p>
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-5xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                📊 FeedbackBot
+              </h1>
+              <p class="mt-2 text-lg font-semibold text-gray-600">
+                AI-powered Analytics & Insights
+              </p>
+            </div>
+            <nav class="hidden md:flex gap-4">
+              <.link
+                navigate={~p"/"}
+                class="px-6 py-3 rounded-xl font-bold bg-violet-600 text-white hover:bg-violet-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                🏠 Dashboard
+              </.link>
+              <.link
+                navigate={~p"/employees"}
+                class="px-6 py-3 rounded-xl font-bold bg-white text-violet-600 border-2 border-violet-600 hover:bg-violet-50 transition-all"
+              >
+                👥 Співробітники
+              </.link>
+              <.link
+                navigate={~p"/analytics"}
+                class="px-6 py-3 rounded-xl font-bold bg-white text-violet-600 border-2 border-violet-600 hover:bg-violet-50 transition-all"
+              >
+                📈 Аналітика
+              </.link>
+            </nav>
+          </div>
         </div>
       </header>
 
@@ -206,30 +230,37 @@ defmodule FeedbackBotWeb.DashboardLive do
 
   defp stat_card(assigns) do
     ~H"""
-    <div class="neo-brutal-card">
-      <h3 class="text-sm font-black uppercase text-gray-600"><%= @title %></h3>
-      <p class="text-4xl font-black mt-2"><%= @value %></p>
-      <div class="mt-3 flex items-center gap-4">
-        <div class="flex items-center gap-1">
-          <span class="text-xs font-bold">Тональність:</span>
-          <span class={[
-            "text-sm font-black",
-            sentiment_color(@sentiment)
-          ]}>
-            <%= if is_float(@sentiment), do: Float.round(@sentiment, 2), else: @sentiment %>
-          </span>
-        </div>
-        <%= if @trend != 0 do %>
-          <div class="flex items-center gap-1">
+    <div class="relative overflow-hidden rounded-2xl bg-white shadow-2xl border-4 border-violet-200 hover:border-violet-400 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-violet-200">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-400 to-purple-400 opacity-10 rounded-full -mr-16 -mt-16">
+      </div>
+      <div class="p-6 relative">
+        <h3 class="text-sm font-bold uppercase text-gray-500 tracking-wider"><%= @title %></h3>
+        <p class="text-5xl font-black mt-3 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+          <%= @value %>
+        </p>
+        <div class="mt-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-gray-600">Тональність:</span>
             <span class={[
-              "text-sm font-black",
-              if(@trend > 0, do: "text-green-600", else: "text-red-600")
+              "px-3 py-1 rounded-full text-xs font-bold",
+              sentiment_badge_color(@sentiment)
             ]}>
-              <%= if @trend > 0, do: "↑", else: "↓" %>
-              <%= Float.round(abs(@trend), 2) %>
+              <%= if is_float(@sentiment), do: Float.round(@sentiment, 2), else: @sentiment %>
             </span>
           </div>
-        <% end %>
+          <%= if @trend != 0 do %>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-gray-600">Тренд:</span>
+              <span class={[
+                "px-3 py-1 rounded-full text-xs font-bold",
+                if(@trend > 0, do: "bg-green-100 text-green-700", else: "bg-red-100 text-red-700")
+              ]}>
+                <%= if @trend > 0, do: "↑", else: "↓" %>
+                <%= Float.round(abs(@trend), 2) %>
+              </span>
+            </div>
+          <% end %>
+        </div>
       </div>
     </div>
     """
@@ -274,6 +305,14 @@ defmodule FeedbackBotWeb.DashboardLive do
   defp sentiment_color(sentiment) when sentiment > 0.3, do: "text-green-600"
   defp sentiment_color(sentiment) when sentiment < -0.3, do: "text-red-600"
   defp sentiment_color(_), do: "text-gray-600"
+
+  defp sentiment_badge_color(sentiment) when sentiment > 0.3,
+    do: "bg-green-100 text-green-700 border border-green-300"
+
+  defp sentiment_badge_color(sentiment) when sentiment < -0.3,
+    do: "bg-red-100 text-red-700 border border-red-300"
+
+  defp sentiment_badge_color(_), do: "bg-gray-100 text-gray-700 border border-gray-300"
 
   defp normalize_sentiment(sentiment) do
     # Перетворюємо -1..1 в 0..100

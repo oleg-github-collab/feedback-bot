@@ -96,20 +96,41 @@ defmodule FeedbackBot.Jobs.ProcessAudioJob do
     employee = Employees.get_employee!(feedback.employee_id)
 
     message = """
-    ✅ *Фідбек успішно збережено!*
+    🎉 *ФІДБЕК УСПІШНО ЗБЕРЕЖЕНО!*
 
-    👤 Співробітник: #{employee.name}
-    📊 Тональність: #{format_sentiment(analysis.sentiment_label, analysis.sentiment_score)}
+    ━━━━━━━━━━━━━━━━━━━━
+    👤 *Співробітник:* #{employee.name}
+    ⏱ *Тривалість:* #{feedback.duration_seconds} сек
+    📊 *Тональність:* #{format_sentiment(analysis.sentiment_label, analysis.sentiment_score)}
+    🎯 *Важливість:* #{format_urgency(analysis.urgency_score)}
+    ━━━━━━━━━━━━━━━━━━━━
 
-    📝 *Резюме:*
-    #{analysis.summary}
+    📝 *Резюме фідбеку:*
+    _#{analysis.summary}_
 
     #{format_analysis_details(analysis)}
 
-    Натисніть /start щоб записати ще один фідбек.
+    ━━━━━━━━━━━━━━━━━━━━
+    ✅ Фідбек додано до аналітики
+    📊 Переглянути статистику: /analytics
+    🎤 Записати ще один: /start
     """
 
-    ExGram.send_message(chat_id, message, parse_mode: "Markdown")
+    keyboard = [
+      [
+        %{text: "🎤 Записати ще один фідбек", callback_data: "action:start_feedback"}
+      ],
+      [
+        %{
+          text: "📊 Переглянути Аналітику",
+          web_app: %{url: "https://feedback-bot-production-5dda.up.railway.app"}
+        }
+      ]
+    ]
+
+    markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+    ExGram.send_message(chat_id, message, parse_mode: "Markdown", reply_markup: markup)
   end
 
   defp send_error_message(chat_id, error_text) do
@@ -125,6 +146,10 @@ defmodule FeedbackBot.Jobs.ProcessAudioJob do
   defp format_sentiment("positive", score), do: "😊 Позитивна (#{Float.round(score, 2)})"
   defp format_sentiment("neutral", score), do: "😐 Нейтральна (#{Float.round(score, 2)})"
   defp format_sentiment("negative", score), do: "😟 Негативна (#{Float.round(score, 2)})"
+
+  defp format_urgency(score) when score >= 0.8, do: "🔴 Висока"
+  defp format_urgency(score) when score >= 0.5, do: "🟡 Середня"
+  defp format_urgency(_score), do: "🟢 Низька"
 
   defp format_analysis_details(analysis) do
     parts = []

@@ -46,23 +46,35 @@ defmodule FeedbackBot.Bot.Handler do
 
   def handle({:command, :start, %{from: from}}, context) do
     if authorized?(from.id) do
-      # Створюємо Web App кнопку
-      web_app_button = [
+      # Очищуємо стан при старті
+      FeedbackBot.Bot.State.clear_state(from.id)
+
+      keyboard = [
+        [
+          %{text: "🎤 Записати Фідбек", callback_data: "action:start_feedback"}
+        ],
         [
           %{
-            text: "📊 Відкрити Аналітику",
+            text: "📊 Переглянути Аналітику",
             web_app: %{url: "https://feedback-bot-production-5dda.up.railway.app"}
           }
         ]
       ]
 
-      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: web_app_button}
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
 
       answer(context, """
-      👋 Вітаю! Це бот для збору голосового фідбеку про роботу співробітників.
+      👋 *Вітаю у FeedbackBot!*
 
-      📊 Натисніть кнопку нижче щоб відкрити веб-аналітику, або оберіть /list щоб почати запис фідбеку.
-      """, reply_markup: markup)
+      Цей бот допоможе вам швидко записати голосовий фідбек про роботу співробітників.
+
+      ✨ *Що можна зробити?*
+
+      🎤 *Записати фідбек* — оберіть співробітника та надішліть голосове повідомлення
+      📊 *Переглянути аналітику* — відкрийте веб-інтерфейс з детальною статистикою
+
+      Оберіть дію нижче:
+      """, parse_mode: "Markdown", reply_markup: markup)
     else
       answer(context, "⛔️ У вас немає доступу до цього бота.")
     end
@@ -124,6 +136,52 @@ defmodule FeedbackBot.Bot.Handler do
   end
 
   # Обробка callback query від inline кнопок
+  def handle({:callback_query, %{data: "action:start_feedback"} = query}, context) do
+    ExGram.answer_callback_query(query.id, text: "✅ Починаємо запис фідбеку")
+
+    edit(context, query.message, """
+    🎤 *КРОК 1 з 3: Оберіть співробітника*
+
+    Виберіть співробітника, про якого ви хочете залишити фідбек:
+    """, parse_mode: "Markdown")
+
+    show_employee_list_inline(context, query.message.chat.id, query.message.message_id)
+  end
+
+  def handle({:callback_query, %{data: "action:back_to_start"} = query}, context) do
+    user_id = query.from.id
+    FeedbackBot.Bot.State.clear_state(user_id)
+
+    ExGram.answer_callback_query(query.id, text: "🏠 Повернення на початок")
+
+    keyboard = [
+      [
+        %{text: "🎤 Записати Фідбек", callback_data: "action:start_feedback"}
+      ],
+      [
+        %{
+          text: "📊 Переглянути Аналітику",
+          web_app: %{url: "https://feedback-bot-production-5dda.up.railway.app"}
+        }
+      ]
+    ]
+
+    markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+    edit(context, query.message, """
+    👋 *Вітаю у FeedbackBot!*
+
+    Цей бот допоможе вам швидко записати голосовий фідбек про роботу співробітників.
+
+    ✨ *Що можна зробити?*
+
+    🎤 *Записати фідбек* — оберіть співробітника та надішліть голосове повідомлення
+    📊 *Переглянути аналітику* — відкрийте веб-інтерфейс з детальною статистикою
+
+    Оберіть дію нижче:
+    """, parse_mode: "Markdown", reply_markup: markup)
+  end
+
   def handle({:callback_query, %{data: "employee:" <> employee_id} = query}, context) do
     user_id = query.from.id
 
@@ -137,19 +195,32 @@ defmodule FeedbackBot.Bot.Handler do
 
         ExGram.answer_callback_query(query.id, text: "✅ Обрано: #{employee.name}")
 
+        keyboard = [
+          [%{text: "🏠 Повернутись на початок", callback_data: "action:back_to_start"}]
+        ]
+
+        markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
         edit(context, query.message, """
-        ✅ Ви обрали: *#{employee.name}*
+        ✅ *КРОК 2 з 3: Запишіть голосовий фідбек*
 
-        🎤 Тепер запишіть голосове повідомлення з вашим фідбеком та надішліть його сюди.
+        Співробітник: *#{employee.name}*
 
-        💡 Підказки що включити у фідбек:
-        • Що вдалося добре?
-        • Які є проблеми або виклики?
+        🎤 *Як записати фідбек:*
+        1. Натисніть на значок мікрофону 🎤 у полі вводу
+        2. Запишіть ваш відгук (тримайте кнопку натиснутою)
+        3. Відпустіть кнопку та надішліть аудіо
+
+        💡 *Про що розповісти:*
+        • Що вдалося добре? Які сильні сторони?
+        • Є якісь проблеми чи виклики?
         • Що можна покращити?
-        • Загальне враження від роботи
+        • Загальне враження від співпраці
 
-        Натисніть /cancel щоб скасувати.
-        """, parse_mode: "Markdown")
+        ⏱ *Рекомендована тривалість:* 30 секунд - 2 хвилини
+
+        _Після відправки аудіо бот автоматично розпізнає мову та проаналізує тональність_
+        """, parse_mode: "Markdown", reply_markup: markup)
     end
   end
 
@@ -262,11 +333,71 @@ defmodule FeedbackBot.Bot.Handler do
     end
   end
 
+  defp show_employee_list_inline(context, chat_id, message_id) do
+    employees = Employees.list_active_employees()
+
+    if Enum.empty?(employees) do
+      keyboard = [
+        [%{text: "🏠 Повернутись на початок", callback_data: "action:back_to_start"}]
+      ]
+
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+      ExGram.edit_message_text(
+        """
+        ❌ Немає активних співробітників у системі.
+
+        Додайте співробітників через веб-інтерфейс.
+        """,
+        chat_id: chat_id,
+        message_id: message_id,
+        reply_markup: markup
+      )
+    else
+      keyboard =
+        employees
+        |> Enum.chunk_every(2)
+        |> Enum.map(fn chunk ->
+          Enum.map(chunk, fn emp ->
+            %{text: "👤 #{emp.name}", callback_data: "employee:#{emp.id}"}
+          end)
+        end)
+
+      # Додаємо кнопку назад
+      keyboard_with_back = keyboard ++ [[%{text: "🏠 Назад", callback_data: "action:back_to_start"}]]
+
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard_with_back}
+
+      ExGram.edit_message_reply_markup(
+        chat_id: chat_id,
+        message_id: message_id,
+        reply_markup: markup
+      )
+    end
+  end
+
   defp handle_voice_message(voice, from, msg, context) do
     employee_id = FeedbackBot.Bot.State.get_state(from.id, :selected_employee)
 
     if employee_id do
-      answer(context, "⏳ Обробляю ваше аудіо повідомлення...")
+      # Отримуємо ім'я співробітника
+      employee = Employees.get_employee(employee_id)
+
+      answer(context, """
+      ✅ *КРОК 3 з 3: Обробка фідбеку*
+
+      🎧 Отримано аудіо (#{voice.duration} сек)
+      👤 Співробітник: *#{employee.name}*
+
+      ⏳ *Обробляю ваш фідбек...*
+
+      _Це займе 10-30 секунд:_
+      • 🎯 Розпізнавання мови (Whisper AI)
+      • 🧠 Аналіз тональності (GPT-4)
+      • 💾 Збереження в базу даних
+
+      Зачекайте, будь ласка...
+      """, parse_mode: "Markdown")
 
       # Запускаємо Oban job для обробки
       %{
@@ -282,11 +413,19 @@ defmodule FeedbackBot.Bot.Handler do
       |> FeedbackBot.Jobs.ProcessAudioJob.new()
       |> Oban.insert()
     else
-      answer(context, """
-      ❌ Спочатку оберіть співробітника.
+      keyboard = [
+        [%{text: "🏠 Повернутись на початок", callback_data: "action:back_to_start"}]
+      ]
 
-      Натисніть /start щоб почати.
-      """)
+      markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+      answer(context, """
+      ❌ *Помилка: Співробітника не обрано*
+
+      Спочатку потрібно обрати співробітника.
+
+      Натисніть /start щоб почати спочатку.
+      """, parse_mode: "Markdown", reply_markup: markup)
     end
   end
 
