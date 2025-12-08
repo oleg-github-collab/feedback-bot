@@ -6,12 +6,7 @@
 alias FeedbackBot.{Repo, Employees}
 alias FeedbackBot.Employees.Employee
 
-# Очищуємо існуючих співробітників (тільки для dev)
-if Mix.env() == :dev do
-  Repo.delete_all(Employee)
-end
-
-# Створюємо співробітників зі списку
+# Створюємо співробітників зі списку (пропускаємо дублікати)
 employees_data = [
   %{name: "Іванна Сакало", email: "ivanna.sakalo@opslab.uk"},
   %{name: "Михайло Іващук", email: "mykhailo.ivashchuk@opslab.uk"},
