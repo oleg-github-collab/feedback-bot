@@ -69,6 +69,10 @@ WORKDIR /home/app
 # Copy the release from builder
 COPY --from=builder --chown=app:app /app/_build/prod/rel/feedback_bot ./
 
+# Copy entrypoint script
+COPY --chown=app:app entrypoint.sh ./
+RUN chmod +x entrypoint.sh
+
 # Set environment
 ENV MIX_ENV=prod
 ENV PORT=8080
@@ -76,5 +80,5 @@ ENV PORT=8080
 # Expose port
 EXPOSE 8080
 
-# Start the application
-CMD ["bin/feedback_bot", "start"]
+# Start the application with migrations
+CMD ["./entrypoint.sh"]
