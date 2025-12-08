@@ -591,9 +591,12 @@ defmodule FeedbackBot.Bot.Handler do
 
   # Обробка голосових повідомлень
   def handle({:message, %{voice: voice, from: from} = msg}, context) do
+    Logger.info("Voice handler triggered for user #{from.id}")
     if authorized?(from.id) do
+      Logger.info("User #{from.id} authorized, processing voice")
       handle_voice_message(voice, from, msg, context)
     else
+      Logger.warning("User #{from.id} not authorized")
       answer(context, "⛔️ У вас немає доступу до цього бота.")
     end
   end
@@ -912,13 +915,15 @@ defmodule FeedbackBot.Bot.Handler do
 
   defp handle_voice_message(voice, from, msg, context) do
     employee_id = FeedbackBot.Bot.State.get_state(from.id, :selected_employee)
+    Logger.info("Voice message received from user #{from.id}, employee_id: #{inspect(employee_id)}")
 
     if employee_id do
       # Отримуємо ім'я співробітника
       employee = Employees.get_employee(employee_id)
 
-      # НЕГАЙНЕ підтвердження отримання
-      answer(context, """
+      if employee do
+        # НЕГАЙНЕ підтвердження отримання
+        answer(context, """
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       *ПРОГРЕС: 3 з 3 кроків* ⬤⬤⬤
 
@@ -962,6 +967,16 @@ defmodule FeedbackBot.Bot.Handler do
       }
       |> FeedbackBot.Jobs.ProcessAudioJob.new()
       |> Oban.insert()
+      else
+        # Employee не знайдено в базі
+        answer(context, """
+        ❌ *Помилка: Співробітника не знайдено*
+
+        Можливо, співробітника було видалено.
+
+        Натисніть /start щоб обрати іншого.
+        """, parse_mode: "Markdown")
+      end
     else
       keyboard = [
         [%{text: "🏠 Повернутись на початок", callback_data: "action:back_to_start"}]
