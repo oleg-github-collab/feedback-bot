@@ -4,38 +4,26 @@ if config_env() == :prod do
   # Використовуємо окремі змінні замість DATABASE_URL для більшої надійності
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
-  # Check if SSL should be disabled via PGSSLMODE
-  ssl_enabled = System.get_env("PGSSLMODE") != "disable"
-
-  ssl_opts = if ssl_enabled do
-    [
-      ssl: true,
-      ssl_opts: [
-        verify: :verify_none,
-        # Disable hostname verification for Railway internal network
-        server_name_indication: :disable,
-        customize_hostname_check: [
-          match_fun: fn _, _ -> true end
-        ]
-      ]
-    ]
-  else
-    [ssl: false]
-  end
-
   config :feedback_bot, FeedbackBot.Repo,
-    [
-      hostname: System.get_env("PGHOST") || "postgres.railway.internal",
-      port: String.to_integer(System.get_env("PGPORT") || "5432"),
-      database: System.get_env("PGDATABASE") || "railway",
-      username: System.get_env("PGUSER") || "postgres",
-      password: System.get_env("PGPASSWORD") || raise("PGPASSWORD is required"),
-      pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-      socket_options: maybe_ipv6,
-      show_sensitive_data_on_connection_error: true,
-      queue_target: 5000,
-      queue_interval: 1000
-    ] ++ ssl_opts
+    hostname: System.get_env("PGHOST") || "postgres.railway.internal",
+    port: String.to_integer(System.get_env("PGPORT") || "5432"),
+    database: System.get_env("PGDATABASE") || "railway",
+    username: System.get_env("PGUSER") || "postgres",
+    password: System.get_env("PGPASSWORD") || raise("PGPASSWORD is required"),
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    socket_options: maybe_ipv6,
+    # Railway Postgres requires SSL with custom verification
+    ssl: true,
+    ssl_opts: [
+      verify: :verify_peer,
+      cacerts: :public_key.cacerts_get(),
+      verify_fun: {fn _, _, _ -> {:valid, :ok} end, :ok},
+      server_name_indication: :disable,
+      customize_hostname_check: []
+    ],
+    show_sensitive_data_on_connection_error: true,
+    queue_target: 5000,
+    queue_interval: 1000
 
   secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
