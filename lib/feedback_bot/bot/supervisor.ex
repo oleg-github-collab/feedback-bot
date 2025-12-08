@@ -10,10 +10,11 @@ defmodule FeedbackBot.Bot.Supervisor do
     token = fetch_token()
 
     # Встановлюємо Menu Button для веб-апп
-    Task.start(fn ->
-      Process.sleep(2000)
-      FeedbackBot.Bot.Handler.setup_menu_button()
-    end)
+    # DISABLED: ExGram 0.57.0 doesn't support this format
+    # Task.start(fn ->
+    #   Process.sleep(2000)
+    #   FeedbackBot.Bot.Handler.setup_menu_button()
+    # end)
 
     children = [
       {FeedbackBot.Bot.Handler, [method: :polling, token: token]}
