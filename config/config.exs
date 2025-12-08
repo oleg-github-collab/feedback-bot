@@ -9,7 +9,6 @@ config :feedback_bot, FeedbackBot.Repo,
 
 config :feedback_bot, FeedbackBotWeb.Endpoint,
   url: [host: "localhost"],
-  adapter: Bandit.PhoenixAdapter,
   render_errors: [
     formats: [html: FeedbackBotWeb.ErrorHTML, json: FeedbackBotWeb.ErrorJSON],
     layout: false
