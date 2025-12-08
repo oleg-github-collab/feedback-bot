@@ -38,7 +38,7 @@ RUN mix compile
 
 # Build assets (if any)
 COPY assets assets
-RUN mix assets.deploy || true
+RUN mix assets.deploy
 
 # Build release
 RUN mix release

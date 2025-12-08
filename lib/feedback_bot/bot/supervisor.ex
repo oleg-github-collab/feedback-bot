@@ -7,10 +7,25 @@ defmodule FeedbackBot.Bot.Supervisor do
 
   @impl true
   def init(_init_arg) do
+    token = fetch_token()
+
     children = [
-      {FeedbackBot.Bot.Handler, [method: :polling]}
+      {FeedbackBot.Bot.Handler, [method: :polling, token: token]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
+  end
+
+  defp fetch_token do
+    case Application.fetch_env(:ex_gram, :token) do
+      {:ok, token} when is_binary(token) and byte_size(token) > 0 ->
+        token
+
+      _ ->
+        raise """
+        TELEGRAM_BOT_TOKEN is missing or empty.
+        Set TELEGRAM_BOT_TOKEN env var so the bot can start.
+        """
+    end
   end
 end
