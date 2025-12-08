@@ -10,7 +10,6 @@ defmodule FeedbackBot.Application do
       FeedbackBotWeb.Telemetry,
       FeedbackBot.Repo,
       {Oban, Application.fetch_env!(:feedback_bot, Oban)},
-      {DNSCluster, query: Application.get_env(:feedback_bot, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: FeedbackBot.PubSub},
       {Finch, name: FeedbackBot.Finch},
       FeedbackBot.Bot.State,
