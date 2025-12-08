@@ -40,7 +40,6 @@ RUN mix compile
 
 # Build assets (if any)
 COPY assets assets
-COPY package.json ./assets/
 RUN cd assets && npm install --no-save
 RUN mix assets.deploy
 
