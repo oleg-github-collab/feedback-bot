@@ -41,15 +41,25 @@ if config_env() == :prod do
       environment variable TELEGRAM_BOT_TOKEN is missing.
       """
 
+  # Валідація: хоча б один з ALLOWED_USER_ID або ALLOWED_USER_IDS повинен бути встановлений
+  unless System.get_env("ALLOWED_USER_ID") || System.get_env("ALLOWED_USER_IDS") do
+    raise """
+    environment variable ALLOWED_USER_ID or ALLOWED_USER_IDS is missing.
+    Set at least one of them.
+    """
+  end
+
   config :feedback_bot, :telegram,
-    allowed_user_id: System.get_env("ALLOWED_USER_ID") ||
-      raise """
-      environment variable ALLOWED_USER_ID is missing.
-      """
+    allowed_user_id: System.get_env("ALLOWED_USER_ID"),
+    allowed_user_ids: System.get_env("ALLOWED_USER_IDS")
 
   config :feedback_bot, :openai,
     api_key: System.get_env("OPENAI_API_KEY") ||
       raise """
       environment variable OPENAI_API_KEY is missing.
       """
+
+  # Redis URL (опціонально, якщо не встановлено - кешування буде вимкнено)
+  config :feedback_bot, :redis_url,
+    System.get_env("REDIS_URL")
 end
