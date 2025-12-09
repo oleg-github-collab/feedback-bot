@@ -14,6 +14,10 @@ defmodule FeedbackBotWeb.DashboardLive do
       latest_weekly = Analytics.get_latest_snapshot("weekly")
       latest_monthly = Analytics.get_latest_snapshot("monthly")
 
+      daily = latest_daily || runtime_snapshot(1)
+      weekly = latest_weekly || runtime_snapshot(7)
+      monthly = latest_monthly || runtime_snapshot(30)
+
       recent_feedbacks = Feedbacks.list_recent_feedbacks(5)
       employees = Employees.list_active_employees()
 
@@ -24,9 +28,9 @@ defmodule FeedbackBotWeb.DashboardLive do
         socket
         |> assign(:page_title, "Dashboard")
         |> assign(:active_nav, "/")
-        |> assign(:daily_snapshot, latest_daily)
-        |> assign(:weekly_snapshot, latest_weekly)
-        |> assign(:monthly_snapshot, latest_monthly)
+        |> assign(:daily_snapshot, daily)
+        |> assign(:weekly_snapshot, weekly)
+        |> assign(:monthly_snapshot, monthly)
         |> assign(:recent_feedbacks, recent_feedbacks)
         |> assign(:employees, employees)
         |> assign(:sentiment_trend, sentiment_trend)
@@ -316,5 +320,24 @@ defmodule FeedbackBotWeb.DashboardLive do
   defp normalize_sentiment(sentiment) do
     # Перетворюємо -1..1 в 0..100
     ((sentiment + 1) / 2 * 100) |> max(5) |> min(100) |> round()
+  end
+
+  # Lightweight runtime snapshot so лічильники працюють навіть без precomputed analytics
+  defp runtime_snapshot(days) do
+    period_end = DateTime.utc_now()
+    period_start = DateTime.add(period_end, -days, :day)
+    stats = Feedbacks.get_sentiment_stats(period_start, period_end)
+
+    %{
+      total_feedbacks: stats.total,
+      avg_sentiment: stats.avg_sentiment || 0.0,
+      sentiment_trend: 0.0,
+      positive_count: stats.positive,
+      neutral_count: stats.neutral,
+      negative_count: stats.negative,
+      top_issues: [],
+      ai_insights: nil,
+      recommendations: []
+    }
   end
 end

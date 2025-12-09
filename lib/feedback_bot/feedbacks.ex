@@ -276,25 +276,29 @@ defmodule FeedbackBot.Feedbacks do
   Порівняльна статистика між співробітниками
   """
   def get_employee_comparison(employee_ids, period_start, period_end) do
-    from(f in Feedback,
-      where: f.employee_id in ^employee_ids,
-      where: f.inserted_at >= ^period_start and f.inserted_at < ^period_end,
-      where: f.processing_status == "completed",
-      join: e in assoc(f, :employee),
-      group_by: [e.id, e.name],
-      select: %{
-        employee_id: e.id,
-        employee_name: e.name,
-        avg_sentiment: avg(f.sentiment_score),
-        avg_urgency: avg(f.urgency_score),
-        avg_impact: avg(f.impact_score),
-        total_feedbacks: count(f.id),
-        positive_count: filter(count(f.id), f.sentiment_label == "positive"),
-        neutral_count: filter(count(f.id), f.sentiment_label == "neutral"),
-        negative_count: filter(count(f.id), f.sentiment_label == "negative")
-      }
-    )
-    |> Repo.all()
+    if Enum.empty?(employee_ids) do
+      []
+    else
+      from(f in Feedback,
+        where: f.employee_id in ^employee_ids,
+        where: f.inserted_at >= ^period_start and f.inserted_at < ^period_end,
+        where: f.processing_status == "completed",
+        join: e in assoc(f, :employee),
+        group_by: [e.id, e.name],
+        select: %{
+          employee_id: e.id,
+          employee_name: e.name,
+          avg_sentiment: avg(f.sentiment_score),
+          avg_urgency: avg(f.urgency_score),
+          avg_impact: avg(f.impact_score),
+          total_feedbacks: count(f.id),
+          positive_count: filter(count(f.id), f.sentiment_label == "positive"),
+          neutral_count: filter(count(f.id), f.sentiment_label == "neutral"),
+          negative_count: filter(count(f.id), f.sentiment_label == "negative")
+        }
+      )
+      |> Repo.all()
+    end
   end
 
   @doc """

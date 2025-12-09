@@ -140,7 +140,11 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
 
   defp get_comparison_data(assigns) do
     employee_ids = Enum.map(assigns.employees, & &1.id)
-    Feedbacks.get_employee_comparison(employee_ids, assigns.period_start, assigns.period_end)
+    if Enum.empty?(employee_ids) do
+      []
+    else
+      Feedbacks.get_employee_comparison(employee_ids, assigns.period_start, assigns.period_end)
+    end
   end
 
   defp get_trend_data(assigns) do
