@@ -6,6 +6,9 @@ defmodule FeedbackBotWeb.DashboardLive do
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
+      # Subscribe to real-time updates
+      Phoenix.PubSub.subscribe(FeedbackBot.PubSub, "feedbacks")
+
       # Отримуємо статистику
       latest_daily = Analytics.get_latest_snapshot("daily")
       latest_weekly = Analytics.get_latest_snapshot("weekly")
@@ -41,6 +44,19 @@ defmodule FeedbackBotWeb.DashboardLive do
         |> assign(:employees, [])
        |> assign(:sentiment_trend, [])}
     end
+  end
+
+  @impl true
+  def handle_info({:new_feedback, _feedback}, socket) do
+    # Reload dashboard data when new feedback arrives
+    latest_daily = Analytics.get_latest_snapshot("daily")
+    recent_feedbacks = Feedbacks.list_recent_feedbacks(5)
+    sentiment_trend = Analytics.get_sentiment_trend_data("daily", 30)
+
+    {:noreply, socket
+     |> assign(:daily_snapshot, latest_daily)
+     |> assign(:recent_feedbacks, recent_feedbacks)
+     |> assign(:sentiment_trend, sentiment_trend)}
   end
 
   @impl true

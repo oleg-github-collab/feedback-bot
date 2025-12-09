@@ -28,7 +28,10 @@ defmodule FeedbackBot.Analytics do
       positive_count: stats.positive_count || 0,
       neutral_count: stats.neutral_count || 0,
       negative_count: stats.negative_count || 0,
-      sentiment_trend: calculate_sentiment_trend(period_type, stats.avg_sentiment || 0.0)
+      sentiment_trend: calculate_sentiment_trend(period_type, stats.avg_sentiment || 0.0),
+      top_issues: stats.top_issues || [],
+      top_strengths: stats.top_strengths || [],
+      employee_stats: stats.employee_stats || []
     })
     |> Repo.insert()
   end

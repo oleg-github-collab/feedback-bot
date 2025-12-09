@@ -319,4 +319,76 @@ defmodule FeedbackBot.Feedbacks do
     )
     |> Repo.all()
   end
+
+  @doc """
+  Отримує summary статистику для Analytics snapshots
+  """
+  def get_summary_stats(%{from: period_start, to: period_end}) do
+    # Основна статистика
+    base_stats = from(f in Feedback,
+      where: f.inserted_at >= ^period_start and f.inserted_at <= ^period_end,
+      where: f.processing_status == "completed",
+      select: %{
+        total_count: count(f.id),
+        avg_sentiment: avg(f.sentiment_score),
+        positive_count: filter(count(f.id), f.sentiment_label == "positive"),
+        neutral_count: filter(count(f.id), f.sentiment_label == "neutral"),
+        negative_count: filter(count(f.id), f.sentiment_label == "negative")
+      }
+    ) |> Repo.one() || %{
+      total_count: 0,
+      avg_sentiment: 0.0,
+      positive_count: 0,
+      neutral_count: 0,
+      negative_count: 0
+    }
+
+    # Top issues - групуємо по description з issues (JSON array)
+    feedbacks = filter_feedbacks(%{from: period_start, to: period_end})
+
+    top_issues = feedbacks
+      |> Enum.flat_map(fn f -> f.issues || [] end)
+      |> Enum.group_by(fn issue -> Map.get(issue, "description", "Unknown") end)
+      |> Enum.map(fn {description, issues} ->
+        %{
+          "description" => description,
+          "count" => length(issues),
+          "avg_severity" => (Enum.map(issues, fn i -> Map.get(i, "severity", "medium") end) |> Enum.at(0))
+        }
+      end)
+      |> Enum.sort_by(fn issue -> issue["count"] end, :desc)
+      |> Enum.take(10)
+
+    # Top strengths - групуємо strengths
+    top_strengths = feedbacks
+      |> Enum.flat_map(fn f -> f.strengths || [] end)
+      |> Enum.frequencies()
+      |> Enum.sort_by(fn {_strength, count} -> count end, :desc)
+      |> Enum.take(10)
+      |> Enum.map(fn {strength, count} ->
+        %{"description" => strength, "count" => count}
+      end)
+
+    # Employee stats
+    employee_stats = from(f in Feedback,
+      where: f.inserted_at >= ^period_start and f.inserted_at <= ^period_end,
+      where: f.processing_status == "completed",
+      join: e in assoc(f, :employee),
+      group_by: [e.id, e.name],
+      select: %{
+        "employee_id" => e.id,
+        "employee_name" => e.name,
+        "total_feedbacks" => count(f.id),
+        "avg_sentiment" => avg(f.sentiment_score),
+        "positive_count" => filter(count(f.id), f.sentiment_label == "positive"),
+        "negative_count" => filter(count(f.id), f.sentiment_label == "negative")
+      }
+    ) |> Repo.all()
+
+    Map.merge(base_stats, %{
+      top_issues: top_issues,
+      top_strengths: top_strengths,
+      employee_stats: employee_stats
+    })
+  end
 end
