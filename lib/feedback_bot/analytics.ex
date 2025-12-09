@@ -9,7 +9,25 @@ defmodule FeedbackBot.Analytics do
   alias FeedbackBot.Feedbacks
 
   @doc """
-  Створює новий analytics snapshot для заданого періоду
+  Ініціалізує всі типи snapshots (daily, weekly, monthly)
+  Викликається при старті застосунку або вручну для заповнення даних
+  """
+  def initialize_all_snapshots do
+    results = %{
+      daily: create_snapshot("daily"),
+      weekly: create_snapshot("weekly"),
+      monthly: create_snapshot("monthly")
+    }
+
+    # Логуємо результати
+    require Logger
+    Logger.info("Analytics snapshots initialized: daily=#{inspect(elem(results.daily, 0))}, weekly=#{inspect(elem(results.weekly, 0))}, monthly=#{inspect(elem(results.monthly, 0))}")
+
+    results
+  end
+
+  @doc """
+  Створює або оновлює analytics snapshot для заданого періоду
   """
   def create_snapshot(period_type) do
     {period_start, period_end} = get_period_bounds(period_type)
@@ -17,9 +35,7 @@ defmodule FeedbackBot.Analytics do
     # Отримуємо статистику за період
     stats = Feedbacks.get_summary_stats(%{from: period_start, to: period_end})
 
-    # Створюємо snapshot
-    %Snapshot{}
-    |> Snapshot.changeset(%{
+    snapshot_attrs = %{
       period_type: period_type,
       period_start: period_start,
       period_end: period_end,
@@ -32,8 +48,26 @@ defmodule FeedbackBot.Analytics do
       top_issues: stats.top_issues || [],
       top_strengths: stats.top_strengths || [],
       employee_stats: stats.employee_stats || []
-    })
-    |> Repo.insert()
+    }
+
+    # Шукаємо існуючий snapshot для цього періоду
+    existing = from(s in Snapshot,
+      where: s.period_type == ^period_type and s.period_start == ^period_start
+    ) |> Repo.one()
+
+    case existing do
+      nil ->
+        # Створюємо новий
+        %Snapshot{}
+        |> Snapshot.changeset(snapshot_attrs)
+        |> Repo.insert()
+
+      existing_snapshot ->
+        # Оновлюємо існуючий
+        existing_snapshot
+        |> Snapshot.changeset(snapshot_attrs)
+        |> Repo.update()
+    end
   end
 
   defp get_period_bounds("daily") do
