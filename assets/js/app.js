@@ -17,9 +17,15 @@ import {
   TopicBarChart
 } from "./hooks/charts"
 
+// Import mobile navigation
+import { MobileNav } from "./mobile_nav"
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 let Hooks = {}
+
+// Mobile Navigation Hook
+Hooks.MobileNav = MobileNav
 
 // Advanced Analytics Hooks
 Hooks.HeatmapChart = HeatmapChart

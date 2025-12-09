@@ -161,29 +161,39 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
     <div class="min-h-screen bg-slate-950 text-slate-100">
       <.top_nav active={@active_nav} />
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 lg:space-y-8">
+        <div class="flex flex-col gap-3 sm:gap-4">
           <div>
-            <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Deep insight workspace</p>
-            <h1 class="text-4xl md:text-5xl font-black tracking-tight text-white">Аналітика 2.0</h1>
-            <p class="mt-2 text-slate-400">
+            <p class="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-slate-400">
+              Deep insight workspace
+            </p>
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight text-white leading-tight">
+              Аналітика 2.0
+            </h1>
+            <p class="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-400">
               Глибокі тренди, ризики та перемоги команди в одному екрані.
             </p>
           </div>
-          <div class="flex gap-3">
-            <a href="#heatmap" class="px-4 py-2 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-sm font-semibold">
-              Перейти до Heatmap
+          <div class="flex flex-wrap gap-2 sm:gap-3">
+            <a
+              href="#heatmap"
+              class="px-3 sm:px-4 py-2 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 active:bg-slate-800 text-xs sm:text-sm font-semibold touch-manipulation"
+            >
+              Heatmap
             </a>
-            <a href="#timeline" class="px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-bold shadow-lg hover:bg-emerald-400">
+            <a
+              href="#timeline"
+              class="px-3 sm:px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-bold shadow-lg hover:bg-emerald-400 active:bg-emerald-400 text-xs sm:text-sm touch-manipulation"
+            >
               Живий потік
             </a>
           </div>
         </div>
 
         <!-- Filters -->
-        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4">
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-4">
           <form phx-change="filter">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div>
                 <label class="block text-xs uppercase tracking-wide text-slate-400">Співробітник</label>
                 <select name="employee_id" class="mt-1 block w-full rounded-lg border border-slate-800 bg-slate-900 text-white focus:border-emerald-500 focus:ring-emerald-500">
@@ -228,7 +238,7 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
         </div>
 
         <!-- KPI Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <.kpi_card title="Всього фідбеків" value={@summary.total_feedbacks} accent="emerald" footer="Live processed" />
           <.kpi_card
             title="Середній Sentiment"
@@ -251,25 +261,33 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
         </div>
 
         <!-- Deep dive layout -->
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div class="xl:col-span-2 space-y-6">
-            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
-              <div class="flex items-center justify-between mb-4">
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+          <div class="xl:col-span-2 space-y-4 sm:space-y-6">
+            <div class="bg-slate-900/70 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2">
                 <div>
-                  <p class="text-xs uppercase tracking-wide text-slate-400">Обʼєм + настрій</p>
-                  <h2 class="text-2xl font-black text-white">Pulse за період</h2>
+                  <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-400">
+                    Обʼєм + настрій
+                  </p>
+                  <h2 class="text-lg sm:text-xl lg:text-2xl font-black text-white">Pulse за період</h2>
                 </div>
-                <span class="text-xs text-slate-400">Комбінований графік</span>
+                <span class="text-[10px] sm:text-xs text-slate-400">Комбінований графік</span>
               </div>
-              <div id="volume-sentiment" class="h-80" phx-hook="VolumeSentimentChart" data-volume-sentiment={Jason.encode!(@volume_sentiment)}></div>
+              <div
+                id="volume-sentiment"
+                class="h-64 sm:h-72 lg:h-80 overflow-x-auto"
+                phx-hook="VolumeSentimentChart"
+                data-volume-sentiment={Jason.encode!(@volume_sentiment)}
+              >
+              </div>
             </div>
 
-            <div id="heatmap" class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
-              <div class="flex items-center justify-between mb-4">
-                <h2 class="text-2xl font-black text-white">Heatmap тональності</h2>
-                <span class="text-xs text-slate-400">По днях та співробітниках</span>
+            <div id="heatmap" class="bg-slate-900/70 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2">
+                <h2 class="text-lg sm:text-xl lg:text-2xl font-black text-white">Heatmap тональності</h2>
+                <span class="text-[10px] sm:text-xs text-slate-400">По днях та співробітниках</span>
               </div>
-              <div id="heatmap-chart" phx-hook="HeatmapChart" data-heatmap={Jason.encode!(@heatmap_data)}></div>
+              <div id="heatmap-chart" class="overflow-x-auto" phx-hook="HeatmapChart" data-heatmap={Jason.encode!(@heatmap_data)}></div>
             </div>
 
             <%= if @selected_employee_id && length(@trend_data) > 0 do %>

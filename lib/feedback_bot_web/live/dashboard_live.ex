@@ -69,14 +69,14 @@ defmodule FeedbackBotWeb.DashboardLive do
     <div class="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50">
       <.top_nav active={@active_nav} />
       <!-- Header -->
-      <header class="bg-white shadow-lg border-b-4 border-violet-600">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <header class="bg-white shadow-lg border-b-2 sm:border-b-4 border-violet-600">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-5xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent leading-tight">
                 📊 FeedbackBot
               </h1>
-              <p class="mt-2 text-lg font-semibold text-gray-600">
+              <p class="mt-1 sm:mt-2 text-sm sm:text-base lg:text-lg font-semibold text-gray-600">
                 AI-powered Analytics & Insights
               </p>
             </div>
@@ -84,9 +84,9 @@ defmodule FeedbackBotWeb.DashboardLive do
         </div>
       </header>
 
-      <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         <!-- Quick Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <.stat_card
             title="Сьогодні"
             value={if @daily_snapshot, do: @daily_snapshot.total_feedbacks, else: 0}
@@ -107,20 +107,24 @@ defmodule FeedbackBotWeb.DashboardLive do
           />
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <!-- Sentiment Trend Chart -->
           <div class="neo-brutal-card">
-            <h2 class="text-2xl font-black uppercase mb-4">Тренд Тональності</h2>
-            <div class="h-64">
+            <h2 class="text-lg sm:text-xl lg:text-2xl font-black uppercase mb-3 sm:mb-4">
+              Тренд Тональності
+            </h2>
+            <div class="h-48 sm:h-56 lg:h-64 overflow-x-auto">
               <.sentiment_chart data={@sentiment_trend} />
             </div>
           </div>
 
           <!-- Recent Feedbacks -->
           <div class="neo-brutal-card">
-            <div class="flex justify-between items-center mb-4">
-              <h2 class="text-2xl font-black uppercase">Останні Фідбеки</h2>
-              <.link navigate="/feedbacks" class="neo-brutal-btn-sm">
+            <div class="flex justify-between items-center mb-3 sm:mb-4">
+              <h2 class="text-lg sm:text-xl lg:text-2xl font-black uppercase">
+                Останні Фідбеки
+              </h2>
+              <.link navigate="/feedbacks" class="neo-brutal-btn-sm text-xs sm:text-sm">
                 Всі →
               </.link>
             </div>
@@ -146,7 +150,9 @@ defmodule FeedbackBotWeb.DashboardLive do
           <!-- Top Issues -->
           <%= if @weekly_snapshot && length(@weekly_snapshot.top_issues) > 0 do %>
             <div class="neo-brutal-card">
-              <h2 class="text-2xl font-black uppercase mb-4">Топ Проблем</h2>
+              <h2 class="text-lg sm:text-xl lg:text-2xl font-black uppercase mb-3 sm:mb-4">
+                Топ Проблем
+              </h2>
               <div class="space-y-2">
                 <%= for {issue, idx} <- Enum.with_index(@weekly_snapshot.top_issues, 1) do %>
                   <div class="flex items-start gap-3">
@@ -172,9 +178,9 @@ defmodule FeedbackBotWeb.DashboardLive do
 
           <!-- Employee Overview -->
           <div class="neo-brutal-card">
-            <div class="flex justify-between items-center mb-4">
-              <h2 class="text-2xl font-black uppercase">Співробітники</h2>
-              <.link navigate="/employees" class="neo-brutal-btn-sm">
+            <div class="flex justify-between items-center mb-3 sm:mb-4">
+              <h2 class="text-lg sm:text-xl lg:text-2xl font-black uppercase">Співробітники</h2>
+              <.link navigate="/employees" class="neo-brutal-btn-sm text-xs sm:text-sm">
                 Управління →
               </.link>
             </div>
@@ -196,8 +202,8 @@ defmodule FeedbackBotWeb.DashboardLive do
 
         <!-- AI Insights -->
         <%= if @weekly_snapshot && @weekly_snapshot.ai_insights do %>
-          <div class="mt-8 neo-brutal-card bg-yellow-100">
-            <h2 class="text-2xl font-black uppercase mb-4 flex items-center gap-2">
+          <div class="mt-6 sm:mt-8 neo-brutal-card bg-yellow-100">
+            <h2 class="text-lg sm:text-xl lg:text-2xl font-black uppercase mb-3 sm:mb-4 flex items-center gap-2">
               <span>🤖</span>
               <span>AI Інсайти</span>
             </h2>
@@ -233,33 +239,39 @@ defmodule FeedbackBotWeb.DashboardLive do
 
   defp stat_card(assigns) do
     ~H"""
-    <div class="relative overflow-hidden rounded-2xl bg-white shadow-2xl border-4 border-violet-200 hover:border-violet-400 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-violet-200">
-      <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-400 to-purple-400 opacity-10 rounded-full -mr-16 -mt-16">
+    <div class="relative overflow-hidden rounded-xl sm:rounded-2xl bg-white shadow-xl border-3 sm:border-4 border-violet-200 active:border-violet-400 sm:hover:border-violet-400 transition-all duration-300 sm:transform sm:hover:-translate-y-2 sm:hover:shadow-violet-200">
+      <div class="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-violet-400 to-purple-400 opacity-10 rounded-full -mr-12 sm:-mr-16 -mt-12 sm:-mt-16">
       </div>
-      <div class="p-6 relative">
-        <h3 class="text-sm font-bold uppercase text-gray-500 tracking-wider"><%= @title %></h3>
-        <p class="text-5xl font-black mt-3 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+      <div class="p-4 sm:p-6 relative">
+        <h3 class="text-xs sm:text-sm font-bold uppercase text-gray-500 tracking-wider">
+          <%= @title %>
+        </h3>
+        <p class="text-4xl sm:text-5xl font-black mt-2 sm:mt-3 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent leading-tight">
           <%= @value %>
         </p>
-        <div class="mt-4 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-gray-600">Тональність:</span>
+        <div class="mt-3 sm:mt-4 space-y-1.5 sm:space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] sm:text-xs font-semibold text-gray-600 flex-shrink-0">
+              Тональність:
+            </span>
             <span class={[
-              "px-3 py-1 rounded-full text-xs font-bold",
+              "px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap",
               sentiment_badge_color(@sentiment)
             ]}>
-              <%= if is_float(@sentiment), do: Float.round(@sentiment, 2), else: @sentiment %>
+              <%= format_sentiment(@sentiment) %>
             </span>
           </div>
           <%= if @trend != 0 do %>
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold text-gray-600">Тренд:</span>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[10px] sm:text-xs font-semibold text-gray-600 flex-shrink-0">
+                Тренд:
+              </span>
               <span class={[
-                "px-3 py-1 rounded-full text-xs font-bold",
+                "px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap flex items-center gap-1",
                 if(@trend > 0, do: "bg-green-100 text-green-700", else: "bg-red-100 text-red-700")
               ]}>
-                <%= if @trend > 0, do: "↑", else: "↓" %>
-                <%= Float.round(abs(@trend), 2) %>
+                <span><%= if @trend > 0, do: "↑", else: "↓" %></span>
+                <span><%= format_trend(@trend) %>%</span>
               </span>
             </div>
           <% end %>
@@ -328,16 +340,48 @@ defmodule FeedbackBotWeb.DashboardLive do
     period_start = DateTime.add(period_end, -days, :day)
     stats = Feedbacks.get_sentiment_stats(period_start, period_end)
 
+    # Calculate trend by comparing with previous period
+    prev_period_end = period_start
+    prev_period_start = DateTime.add(prev_period_end, -days, :day)
+    prev_stats = Feedbacks.get_sentiment_stats(prev_period_start, prev_period_end)
+
+    current_sentiment = stats.avg_sentiment || 0.0
+    prev_sentiment = prev_stats.avg_sentiment || 0.0
+
+    sentiment_trend =
+      if prev_sentiment != 0 do
+        ((current_sentiment - prev_sentiment) / abs(prev_sentiment)) * 100
+      else
+        0.0
+      end
+
     %{
-      total_feedbacks: stats.total,
-      avg_sentiment: stats.avg_sentiment || 0.0,
-      sentiment_trend: 0.0,
-      positive_count: stats.positive,
-      neutral_count: stats.neutral,
-      negative_count: stats.negative,
+      total_feedbacks: stats.total || 0,
+      avg_sentiment: current_sentiment,
+      sentiment_trend: sentiment_trend,
+      positive_count: stats.positive || 0,
+      neutral_count: stats.neutral || 0,
+      negative_count: stats.negative || 0,
       top_issues: [],
       ai_insights: nil,
       recommendations: []
     }
   end
+
+  # Format helpers for responsive display
+  defp format_sentiment(sentiment) when is_float(sentiment) do
+    Float.round(sentiment, 2)
+  end
+
+  defp format_sentiment(sentiment) when is_integer(sentiment), do: sentiment
+  defp format_sentiment(nil), do: 0.0
+  defp format_sentiment(_), do: 0.0
+
+  defp format_trend(trend) when is_float(trend) do
+    Float.round(abs(trend), 1)
+  end
+
+  defp format_trend(trend) when is_integer(trend), do: abs(trend)
+  defp format_trend(nil), do: 0
+  defp format_trend(_), do: 0
 end
