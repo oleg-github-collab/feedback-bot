@@ -59,34 +59,58 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
   end
 
   defp load_analytics_data(socket) do
-    filters = build_filters(socket.assigns)
-    feedbacks =
-      filters
-      |> Feedbacks.filter_feedbacks()
-      |> filter_by_search(socket.assigns.search_term)
-    summary = summarize_feedbacks(feedbacks)
-    topic_pareto = topic_pareto(feedbacks)
-    volume_sentiment = volume_sentiment(feedbacks)
-    sentiment_distribution = sentiment_distribution(feedbacks)
-    urgency_distribution = score_distribution(feedbacks, :urgency_score)
-    impact_distribution = score_distribution(feedbacks, :impact_score)
-    risk_register = risk_register(feedbacks)
-    timeline_data = timeline_from_feedbacks(feedbacks)
+    try do
+      filters = build_filters(socket.assigns)
+      feedbacks =
+        filters
+        |> Feedbacks.filter_feedbacks()
+        |> filter_by_search(socket.assigns.search_term)
+      summary = summarize_feedbacks(feedbacks)
+      topic_pareto = topic_pareto(feedbacks)
+      volume_sentiment = volume_sentiment(feedbacks)
+      sentiment_distribution = sentiment_distribution(feedbacks)
+      urgency_distribution = score_distribution(feedbacks, :urgency_score)
+      impact_distribution = score_distribution(feedbacks, :impact_score)
+      risk_register = risk_register(feedbacks)
+      timeline_data = timeline_from_feedbacks(feedbacks)
 
-    socket
-    |> assign(:feedbacks, feedbacks)
-    |> assign(:summary, summary)
-    |> assign(:volume_sentiment, volume_sentiment)
-    |> assign(:topic_pareto, topic_pareto)
-    |> assign(:sentiment_distribution, sentiment_distribution)
-    |> assign(:urgency_distribution, urgency_distribution)
-    |> assign(:impact_distribution, impact_distribution)
-    |> assign(:risk_register, risk_register)
-    |> assign(:heatmap_data, get_heatmap_data(socket.assigns))
-    |> assign(:word_cloud_data, Feedbacks.get_word_frequencies(feedbacks))
-    |> assign(:timeline_data, timeline_data)
-    |> assign(:comparison_data, get_comparison_data(socket.assigns))
-    |> assign(:trend_data, get_trend_data(socket.assigns))
+      socket
+      |> assign(:feedbacks, feedbacks)
+      |> assign(:summary, summary)
+      |> assign(:volume_sentiment, volume_sentiment)
+      |> assign(:topic_pareto, topic_pareto)
+      |> assign(:sentiment_distribution, sentiment_distribution)
+      |> assign(:urgency_distribution, urgency_distribution)
+      |> assign(:impact_distribution, impact_distribution)
+      |> assign(:risk_register, risk_register)
+      |> assign(:heatmap_data, get_heatmap_data(socket.assigns))
+      |> assign(:word_cloud_data, Feedbacks.get_word_frequencies(feedbacks))
+      |> assign(:timeline_data, timeline_data)
+      |> assign(:comparison_data, get_comparison_data(socket.assigns))
+      |> assign(:trend_data, get_trend_data(socket.assigns))
+      |> assign(:error, nil)
+    rescue
+      e ->
+        require Logger
+        Logger.error("Analytics 2.0 load error: #{inspect(e)}")
+        Logger.error("Stacktrace: #{inspect(__STACKTRACE__)}")
+
+        socket
+        |> assign(:feedbacks, [])
+        |> assign(:summary, %{total_feedbacks: 0, avg_sentiment: 0.0, avg_urgency: 0.0, avg_impact: 0.0, positive_share: 0.0, negative_share: 0.0, risky_feedbacks: 0})
+        |> assign(:volume_sentiment, [])
+        |> assign(:topic_pareto, [])
+        |> assign(:sentiment_distribution, [])
+        |> assign(:urgency_distribution, [])
+        |> assign(:impact_distribution, [])
+        |> assign(:risk_register, [])
+        |> assign(:heatmap_data, [])
+        |> assign(:word_cloud_data, [])
+        |> assign(:timeline_data, [])
+        |> assign(:comparison_data, [])
+        |> assign(:trend_data, [])
+        |> assign(:error, "#{inspect(e)}")
+    end
   end
 
   defp build_filters(assigns) do
@@ -162,6 +186,18 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
       <.top_nav active={@active_nav} />
 
       <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 lg:space-y-8">
+        <%= if @error do %>
+          <div class="bg-red-900/30 border border-red-500 rounded-xl p-4">
+            <h3 class="text-xl font-bold text-red-400">Помилка завантаження аналітики</h3>
+            <p class="text-sm text-red-300 mt-2">
+              <%= @error %>
+            </p>
+            <p class="text-xs text-slate-400 mt-4">
+              Перевірте логи Railway для деталей. Можливо, база даних порожня або є проблеми з підключенням.
+            </p>
+          </div>
+        <% end %>
+
         <div class="flex flex-col gap-3 sm:gap-4">
           <div>
             <p class="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-slate-400">
