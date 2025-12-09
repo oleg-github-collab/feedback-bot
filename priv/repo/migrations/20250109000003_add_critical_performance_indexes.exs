@@ -4,8 +4,7 @@ defmodule FeedbackBot.Repo.Migrations.AddCriticalPerformanceIndexes do
   def up do
     # Index для analytics snapshots - швидкий пошук останнього snapshot
     create index(:analytics_snapshots, [:period_type, :period_start],
-      name: :analytics_snapshots_period_lookup_idx,
-      order_by: [period_start: :desc]
+      name: :analytics_snapshots_period_lookup_idx
     )
 
     # Index для processing_status - критичний для dashboard queries
