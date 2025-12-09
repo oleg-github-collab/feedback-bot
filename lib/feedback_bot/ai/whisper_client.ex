@@ -17,43 +17,53 @@ defmodule FeedbackBot.AI.WhisperClient do
 
     Logger.info("Using model: #{model}, API key present? #{!is_nil(api_key)}")
 
-    headers = [
-      {"Authorization", "Bearer #{api_key}"}
-    ]
-
+    # Використовуємо HTTPoison з ручним multipart/form-data
     Logger.info("Building multipart request...")
 
-    multipart =
-      Multipart.new()
-      |> Multipart.add_part(Multipart.Part.file_field(audio_file_path, :file))
-      |> Multipart.add_part(Multipart.Part.text_field(model, :model))
-      |> Multipart.add_part(Multipart.Part.text_field("uk", :language))
+    boundary = "----WebKitFormBoundary#{:rand.uniform(1_000_000_000)}"
 
-    content_length = Multipart.content_length(multipart)
-    content_type = Multipart.content_type(multipart, "multipart/form-data")
+    file_content = File.read!(audio_file_path)
 
-    Logger.info("Content-Length: #{content_length}, Content-Type: #{content_type}")
+    body = """
+    --#{boundary}\r
+    Content-Disposition: form-data; name="file"; filename="audio.ogg"\r
+    Content-Type: audio/ogg\r
+    \r
+    #{file_content}\r
+    --#{boundary}\r
+    Content-Disposition: form-data; name="model"\r
+    \r
+    #{model}\r
+    --#{boundary}\r
+    Content-Disposition: form-data; name="language"\r
+    \r
+    uk\r
+    --#{boundary}--\r
+    """
 
-    headers = headers ++ [{"Content-Type", content_type}, {"Content-Length", to_string(content_length)}]
+    headers = [
+      {"Authorization", "Bearer #{api_key}"},
+      {"Content-Type", "multipart/form-data; boundary=#{boundary}"}
+    ]
 
-    body_binary = Multipart.body_binary(multipart)
+    Logger.info("Sending POST request to Whisper API (body size: #{byte_size(body)} bytes)...")
 
-    Logger.info("Sending POST request to Whisper API...")
-
-    case HTTPoison.post(@api_url, body_binary, headers, timeout: 60_000, recv_timeout: 60_000) do
-      {:ok, %{status_code: 200, body: body}} ->
-        case Jason.decode(body) do
+    case HTTPoison.post(@api_url, body, headers, timeout: 60_000, recv_timeout: 60_000) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
+        Logger.info("Got 200 response from Whisper")
+        case Jason.decode(response_body) do
           {:ok, %{"text" => text}} ->
-            Logger.info("Whisper transcription successful")
+            Logger.info("Whisper transcription successful: #{String.slice(text, 0..50)}...")
             {:ok, text}
 
           {:error, error} ->
             Logger.error("Failed to parse Whisper response: #{inspect(error)}")
+            Logger.error("Response body: #{response_body}")
             {:error, "Failed to parse response"}
         end
 
-      {:ok, %{status_code: status_code, body: body}} ->
-        Logger.error("Whisper API error #{status_code}: #{body}")
+      {:ok, %HTTPoison.Response{status_code: status_code, body: response_body}} ->
+        Logger.error("Whisper API error #{status_code}: #{response_body}")
         {:error, "API error: #{status_code}"}
 
       {:error, %HTTPoison.Error{reason: reason}} ->
