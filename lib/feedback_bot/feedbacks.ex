@@ -202,19 +202,21 @@ defmodule FeedbackBot.Feedbacks do
   Отримати heatmap data для sentiment по співробітниках і часу
   """
   def get_sentiment_heatmap(period_start, period_end, interval \\ :day) do
+    interval_str = to_string(interval)
+
     from(f in Feedback,
       where: f.inserted_at >= ^period_start and f.inserted_at < ^period_end,
       where: f.processing_status == "completed",
       join: e in assoc(f, :employee),
-      group_by: [e.id, e.name, fragment("date_trunc(?, ?)", ^to_string(interval), f.inserted_at)],
+      group_by: [e.id, e.name],
       select: %{
         employee_id: e.id,
         employee_name: e.name,
-        period: fragment("date_trunc(?, ?)", ^to_string(interval), f.inserted_at),
+        period: fragment("date_trunc(?, MIN(?))", ^interval_str, f.inserted_at),
         avg_sentiment: avg(f.sentiment_score),
         count: count(f.id)
       },
-      order_by: [fragment("date_trunc(?, ?)", ^to_string(interval), f.inserted_at), e.name]
+      order_by: [fragment("date_trunc(?, MIN(?))", ^interval_str, f.inserted_at), e.name]
     )
     |> Repo.all()
   end
