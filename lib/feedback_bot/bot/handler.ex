@@ -25,6 +25,7 @@ defmodule FeedbackBot.Bot.Handler do
   command("analytics")
   command("manage")
   command("cancel")
+  command("about")
 
   middleware(ExGram.Middleware.IgnoreUsername)
 
@@ -93,9 +94,18 @@ defmodule FeedbackBot.Bot.Handler do
     ℹ️ Команди:
     /list - Показати список співробітників
     /analytics - Відкрити веб-аналітику
+    /about - Детально про продукт
     /cancel - Скасувати поточну дію
     /help - Показати цю довідку
     """)
+  end
+
+  def handle({:command, :about, %{from: from}}, context) do
+    if authorized?(from.id) do
+      send_about_product(context)
+    else
+      send_unauthorized_message(context)
+    end
   end
 
   def handle({:command, :list, %{from: from}}, context) do
@@ -1008,6 +1018,102 @@ defmodule FeedbackBot.Bot.Handler do
         reply_markup: markup
       )
     end
+  end
+
+  defp send_about_product(context) do
+    part1 = """
+    🤖 *ПРО FEEDBACKBOT*
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    FeedbackBot — інноваційна AI-powered система для збору та аналізу фідбеку про роботу співробітників.
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ✨ *ОСНОВНІ МОЖЛИВОСТІ*
+
+    🎤 *ГОЛОСОВИЙ ФІДБЕК*
+    • Записуйте відгуки голосом (30-120 сек)
+    • Розпізнавання через Kaminskyi VoX
+    • Автоматична транскрипція українською
+
+    🧠 *AI АНАЛІТИКА*
+    • Аналіз тональності через Kaminskyi Epic
+    • Виявлення проблем та сильних сторін
+    • Автоматична категоризація тем
+    • Sentiment scoring та mood detection
+
+    📊 *REAL-TIME ДАШБОРД*
+    • Live оновлення метрик
+    • Графіки трендів тональності
+    • Breakdown по співробітниках
+    • Топ-теми та проблеми
+    """
+
+    part2 = """
+    📬 *АВТОМАТИЧНІ РОЗСИЛКИ*
+
+    ⏰ *Щодня о 15:00*
+    Нагадування про запис фідбеку
+
+    ⏰ *Щодня о 9:00*
+    Follow-up негативних відгуків (через тиждень)
+
+    ⏰ *П'ятниця о 16:00*
+    Детальна тижнева статистика
+
+    ⏰ *Понеділок о 10:00* (кожні 2 тижні)
+    AI Performance Reviews для співробітників
+
+    ⏰ *1-ше число місяця о 9:00*
+    Executive Summary для топ-менеджменту
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    🎯 *УНІКАЛЬНІ ФІЧІ*
+
+    ✓ Об'єктивні AI performance reviews
+    ✓ Виключення суб'єктивності та bias
+    ✓ Predictive analytics
+    ✓ Voice emotion analysis
+    ✓ Executive summaries з графіками
+    """
+
+    part3 = """
+    💡 *ЯК КОРИСТУВАТИСЬ*
+
+    1️⃣ Натисніть /start
+    2️⃣ Оберіть співробітника зі списку
+    3️⃣ Запишіть голосовий відгук
+    4️⃣ Дочекайтесь результатів аналізу
+    5️⃣ Перегляньте аналітику в веб-апці
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    📱 *КОМАНДИ БОТА*
+
+    /start - Почати роботу з ботом
+    /help - Довідка по командах
+    /list - Список співробітників
+    /analytics - Відкрити веб-аналітику
+    /about - Про продукт (ця сторінка)
+    /cancel - Скасувати поточну дію
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    🌐 *ВЕБ-ДОДАТОК*
+
+    https://feedback-bot-production-5dda.up.railway.app
+
+    • Dashboard з real-time метриками
+    • Advanced Analytics з фільтрами
+    • Executive Summaries архів
+    • Export звітів
+
+    _Згенеровано Kaminskyi VoX & Kaminskyi Epic_ ✨
+    """
+
+    answer(context, part1, parse_mode: "Markdown")
+    Process.sleep(500)
+    answer(context, part2, parse_mode: "Markdown")
+    Process.sleep(500)
+    answer(context, part3, parse_mode: "Markdown")
   end
 
 end
