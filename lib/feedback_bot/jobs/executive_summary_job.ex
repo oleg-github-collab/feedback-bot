@@ -6,7 +6,7 @@ defmodule FeedbackBot.Jobs.ExecutiveSummaryJob do
   use Oban.Worker, queue: :analytics, max_attempts: 2
 
   require Logger
-  alias FeedbackBot.{Feedbacks, Employees, Analytics, AI}
+  alias FeedbackBot.{Feedbacks, AI}
 
   @impl Oban.Worker
   def perform(%Oban.Job{}) do

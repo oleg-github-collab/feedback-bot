@@ -104,7 +104,7 @@ defmodule FeedbackBot.Bot.Handler do
     if authorized?(from.id) do
       send_about_product(context)
     else
-      send_unauthorized_message(context)
+      answer(context, "⛔️ У вас немає доступу до цього бота.")
     end
   end
 
@@ -953,7 +953,7 @@ defmodule FeedbackBot.Bot.Handler do
     end
   end
 
-  defp handle_voice_message(voice, from, msg, context) do
+  defp handle_voice_message(voice, from, msg, _context) do
     employee_id = FeedbackBot.Bot.State.get_state(from.id, :selected_employee)
     Logger.info("Voice message received from user #{from.id}, employee_id: #{inspect(employee_id)}")
 

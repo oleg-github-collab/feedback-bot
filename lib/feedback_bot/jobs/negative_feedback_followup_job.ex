@@ -6,7 +6,7 @@ defmodule FeedbackBot.Jobs.NegativeFeedbackFollowupJob do
   use Oban.Worker, queue: :notifications, max_attempts: 3
 
   require Logger
-  alias FeedbackBot.{Feedbacks, Employees, Repo}
+  alias FeedbackBot.{Feedbacks, Employees}
 
   @impl Oban.Worker
   def perform(%Oban.Job{}) do

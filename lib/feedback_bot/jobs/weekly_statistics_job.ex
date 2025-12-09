@@ -5,7 +5,7 @@ defmodule FeedbackBot.Jobs.WeeklyStatisticsJob do
   use Oban.Worker, queue: :notifications, max_attempts: 3
 
   require Logger
-  alias FeedbackBot.{Feedbacks, Employees, Analytics}
+  alias FeedbackBot.{Feedbacks, Employees}
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"user_id" => user_id}}) do
@@ -198,7 +198,7 @@ defmodule FeedbackBot.Jobs.WeeklyStatisticsJob do
     """
   end
 
-  defp generate_conclusion(sentiment, stats, employees) do
+  defp generate_conclusion(sentiment, _stats, _employees) do
     cond do
       sentiment.avg >= 0.6 ->
         "✅ Відмінний тиждень! Переважно позитивні відгуки. Команда працює на високому рівні! 🚀"
