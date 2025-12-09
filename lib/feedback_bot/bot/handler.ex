@@ -222,6 +222,33 @@ defmodule FeedbackBot.Bot.Handler do
     answer(context, "❌ Скасовано. Натисніть /start щоб почати знову.")
   end
 
+  # Обробка callback query для manager survey
+  def handle({:callback_query, %{data: "survey:" <> rest} = query}, _context) do
+    [survey_id, question_part, score] = String.split(rest, ":")
+    question_num = String.replace(question_part, "q", "") |> String.to_integer()
+    score_value = String.to_integer(score)
+
+    ExGram.answer_callback_query(query.id, text: "✅ Оцінка #{score_value} збережена")
+
+    # Оновлюємо survey
+    survey = FeedbackBot.Surveys.get_survey(survey_id)
+
+    if survey do
+      field_name = String.to_atom("q#{question_num}_#{get_question_field_name(question_num)}")
+      {:ok, updated_survey} = FeedbackBot.Surveys.update_survey(survey, %{field_name => score_value})
+
+      # Якщо це останнє питання - завершуємо і показуємо порівняння
+      if question_num == 10 do
+        complete_survey(updated_survey, query.from.id)
+      else
+        # Відправляємо наступне питання
+        send_next_question(query.from.id, survey_id, question_num + 1)
+      end
+    else
+      ExGram.send_message(query.from.id, "❌ Помилка: опитування не знайдено")
+    end
+  end
+
   # Обробка callback query від inline кнопок
   def handle({:callback_query, %{data: "action:start_feedback"} = query}, _context) do
     ExGram.answer_callback_query(query.id, text: "✅ Починаємо запис фідбеку")
@@ -1018,6 +1045,202 @@ defmodule FeedbackBot.Bot.Handler do
         reply_markup: markup
       )
     end
+  end
+
+  defp get_question_field_name(1), do: "team_performance"
+  defp get_question_field_name(2), do: "communication"
+  defp get_question_field_name(3), do: "kpi_achievement"
+  defp get_question_field_name(4), do: "problem_solving"
+  defp get_question_field_name(5), do: "motivation"
+  defp get_question_field_name(6), do: "task_speed"
+  defp get_question_field_name(7), do: "collaboration"
+  defp get_question_field_name(8), do: "work_quality"
+  defp get_question_field_name(9), do: "improvement"
+  defp get_question_field_name(10), do: "overall"
+
+  defp send_next_question(user_id, survey_id, question_num) do
+    question_text = get_survey_question_text(question_num)
+
+    keyboard = [
+      [
+        %{text: "1️⃣", callback_data: "survey:#{survey_id}:q#{question_num}:1"},
+        %{text: "2️⃣", callback_data: "survey:#{survey_id}:q#{question_num}:2"},
+        %{text: "3️⃣", callback_data: "survey:#{survey_id}:q#{question_num}:3"},
+        %{text: "4️⃣", callback_data: "survey:#{survey_id}:q#{question_num}:4"},
+        %{text: "5️⃣", callback_data: "survey:#{survey_id}:q#{question_num}:5"}
+      ]
+    ]
+
+    markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+    message = """
+    *Питання #{question_num}/10:*
+
+    #{question_text}
+
+    _Оберіть оцінку від 1 (дуже погано) до 5 (відмінно)_
+    """
+
+    ExGram.send_message(user_id, message, parse_mode: "Markdown", reply_markup: markup)
+  end
+
+  defp get_survey_question_text(1), do: "📊 Наскільки ви задоволені загальним *перформансом команди*?"
+  defp get_survey_question_text(2), do: "💬 Як оцінюєте якість *комунікації* в команді?"
+  defp get_survey_question_text(3), do: "🎯 Чи досягнуто *KPI* цього тижня?"
+  defp get_survey_question_text(4), do: "🔧 Наскільки ефективно *вирішувались проблеми*?"
+  defp get_survey_question_text(5), do: "⚡️ Як оцінюєте рівень *мотивації* команди?"
+  defp get_survey_question_text(6), do: "⏱ Чи задоволені *швидкістю виконання* задач?"
+  defp get_survey_question_text(7), do: "🤝 Як оцінюєте рівень *співпраці* між членами команди?"
+  defp get_survey_question_text(8), do: "✨ Наскільки *якісно виконується* робота?"
+  defp get_survey_question_text(9), do: "📈 Чи є *покращення* порівняно з минулим тижнем?"
+  defp get_survey_question_text(10), do: "⭐️ *Загальна оцінка* тижня"
+
+  defp complete_survey(survey, user_id) do
+    # Обчислюємо середній бал
+    avg_score = FeedbackBot.ManagerSurvey.calculate_average(survey)
+
+    # Оновлюємо survey з completed_at та average_score
+    {:ok, completed_survey} =
+      FeedbackBot.Surveys.update_survey(survey, %{
+        average_score: avg_score,
+        completed_at: DateTime.utc_now()
+      })
+
+    # Отримуємо попередній тиждень для порівняння
+    previous_survey = FeedbackBot.Surveys.get_previous_week_survey(user_id, survey.week_start)
+
+    # Відправляємо результат
+    send_survey_results(user_id, completed_survey, previous_survey)
+  end
+
+  defp send_survey_results(user_id, current_survey, previous_survey) do
+    comparison = build_comparison_message(current_survey, previous_survey)
+
+    message = """
+    ✅ *ОПИТУВАННЯ ЗАВЕРШЕНО!*
+
+    Дякуємо за відповіді! 🙏
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    #{comparison}
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    📅 Наступне опитування: *П'ятниця о 17:00*
+
+    _Ваші відповіді допомагають покращувати роботу команди!_ ✨
+    """
+
+    ExGram.send_message(user_id, message, parse_mode: "Markdown")
+  end
+
+  defp build_comparison_message(current, nil) do
+    """
+    📊 *ВАШІ ОЦІНКИ ЦЬОГО ТИЖНЯ*
+
+    Team Performance: #{current.q1_team_performance}/5
+    Communication: #{current.q2_communication}/5
+    KPI Achievement: #{current.q3_kpi_achievement}/5
+    Problem Solving: #{current.q4_problem_solving}/5
+    Motivation: #{current.q5_motivation}/5
+    Task Speed: #{current.q6_task_speed}/5
+    Collaboration: #{current.q7_collaboration}/5
+    Work Quality: #{current.q8_work_quality}/5
+    Improvement: #{current.q9_improvement}/5
+    Overall: #{current.q10_overall}/5
+
+    *СЕРЕДНІЙ БАЛ:* #{Float.round(current.average_score, 2)}/5
+
+    _Це ваш перший опитувальник! Порівняння з'явиться наступного тижня._
+    """
+  end
+
+  defp build_comparison_message(current, previous) do
+    delta = Float.round(current.average_score - previous.average_score, 2)
+    trend_emoji = if delta > 0, do: "📈 ✅", else: if(delta < 0, do: "📉 ⚠️", else: "➡️")
+
+    questions = [
+      {"Team Performance", current.q1_team_performance, previous.q1_team_performance},
+      {"Communication", current.q2_communication, previous.q2_communication},
+      {"KPI Achievement", current.q3_kpi_achievement, previous.q3_kpi_achievement},
+      {"Problem Solving", current.q4_problem_solving, previous.q4_problem_solving},
+      {"Motivation", current.q5_motivation, previous.q5_motivation},
+      {"Task Speed", current.q6_task_speed, previous.q6_task_speed},
+      {"Collaboration", current.q7_collaboration, previous.q7_collaboration},
+      {"Work Quality", current.q8_work_quality, previous.q8_work_quality},
+      {"Improvement", current.q9_improvement, previous.q9_improvement},
+      {"Overall", current.q10_overall, previous.q10_overall}
+    ]
+
+    comparisons =
+      Enum.map(questions, fn {name, curr, prev} ->
+        change = curr - prev
+        emoji = if change > 0, do: "✅", else: if(change < 0, do: "⚠️", else: "➡️")
+        sign = if change > 0, do: "+#{change}", else: "#{change}"
+        "#{name}: #{prev} → #{curr} #{emoji} (#{sign})"
+      end)
+      |> Enum.join("\n")
+
+    """
+    📊 *ПОРІВНЯННЯ ТИЖНІВ*
+
+    #{comparisons}
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    *СЕРЕДНІЙ БАЛ:*
+    #{Float.round(previous.average_score, 2)} → #{Float.round(current.average_score, 2)} #{trend_emoji}
+    #{if delta != 0, do: "(#{if delta > 0, do: "+", else: ""}#{delta})", else: "(без змін)"}
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    #{generate_insights(current, previous)}
+    """
+  end
+
+  defp generate_insights(current, previous) do
+    improvements =
+      [
+        {"Team Performance", current.q1_team_performance - previous.q1_team_performance},
+        {"Communication", current.q2_communication - previous.q2_communication},
+        {"KPI", current.q3_kpi_achievement - previous.q3_kpi_achievement},
+        {"Problem Solving", current.q4_problem_solving - previous.q4_problem_solving},
+        {"Motivation", current.q5_motivation - previous.q5_motivation}
+      ]
+      |> Enum.filter(fn {_, delta} -> delta > 0 end)
+      |> Enum.sort_by(fn {_, delta} -> delta end, :desc)
+      |> Enum.take(2)
+
+    declines =
+      [
+        {"Team Performance", current.q1_team_performance - previous.q1_team_performance},
+        {"Communication", current.q2_communication - previous.q2_communication},
+        {"KPI", current.q3_kpi_achievement - previous.q3_kpi_achievement},
+        {"Problem Solving", current.q4_problem_solving - previous.q4_problem_solving},
+        {"Motivation", current.q5_motivation - previous.q5_motivation}
+      ]
+      |> Enum.filter(fn {_, delta} -> delta < 0 end)
+      |> Enum.sort_by(fn {_, delta} -> delta end)
+      |> Enum.take(2)
+
+    improvements_text =
+      if length(improvements) > 0 do
+        list = Enum.map_join(improvements, "\n", fn {name, _} -> "• #{name}" end)
+        "✨ *Покращення в:*\n#{list}\n\n"
+      else
+        ""
+      end
+
+    declines_text =
+      if length(declines) > 0 do
+        list = Enum.map_join(declines, "\n", fn {name, _} -> "• #{name}" end)
+        "⚠️ *Потребує уваги:*\n#{list}"
+      else
+        ""
+      end
+
+    improvements_text <> declines_text
   end
 
   defp send_about_product(context) do

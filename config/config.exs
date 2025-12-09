@@ -70,7 +70,9 @@ config :feedback_bot, Oban,
        # Кожні 2 тижні в понеділок о 10:00 UTC - performance reviews
        {"0 10 * * 1", FeedbackBot.Jobs.PerformanceReviewJob},
        # 1-го числа кожного місяця о 9:00 UTC - executive summary
-       {"0 9 1 * *", FeedbackBot.Jobs.ExecutiveSummaryJob}
+       {"0 9 1 * *", FeedbackBot.Jobs.ExecutiveSummaryJob},
+       # Щоп'ятниці о 17:00 UTC - manager satisfaction survey
+       {"0 17 * * 5", FeedbackBot.Jobs.ManagerSurveyJob}
      ]}
   ]
 
