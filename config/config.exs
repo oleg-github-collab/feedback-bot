@@ -56,10 +56,18 @@ config :feedback_bot, :openai,
 
 config :feedback_bot, Oban,
   repo: FeedbackBot.Repo,
-  queues: [audio_processing: 3, analytics: 1],
+  queues: [audio_processing: 3, analytics: 1, notifications: 5],
   plugins: [
     {Oban.Plugins.Pruner, max_age: 86400},
-    {Oban.Plugins.Cron, crontab: []}
+    {Oban.Plugins.Cron,
+     crontab: [
+       # Щодня о 9:00 UTC - follow-up негативних feedbacks (через тиждень)
+       {"0 9 * * *", FeedbackBot.Jobs.NegativeFeedbackFollowupJob},
+       # Щодня о 15:00 UTC - щоденне нагадування
+       {"0 15 * * *", FeedbackBot.Jobs.DailyReminderJob},
+       # Щоп'ятниці о 16:00 UTC - тижнева статистика
+       {"0 16 * * 5", FeedbackBot.Jobs.WeeklyStatisticsJob}
+     ]}
   ]
 
 # Redis URL is configured in runtime.exs for prod, dev default below
