@@ -67,6 +67,11 @@ defmodule FeedbackBot.Jobs.ProcessAudioJob do
             {:new_feedback, feedback}
           )
 
+          # Оновлюємо analytics snapshots
+          %{type: "all"}
+          |> FeedbackBot.Jobs.UpdateAnalyticsJob.new()
+          |> Oban.insert()
+
           :ok
 
         {:error, changeset} ->

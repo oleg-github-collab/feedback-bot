@@ -6,6 +6,82 @@ defmodule FeedbackBot.Analytics do
   import Ecto.Query
   alias FeedbackBot.Repo
   alias FeedbackBot.Analytics.Snapshot
+  alias FeedbackBot.Feedbacks
+
+  @doc """
+  Створює новий analytics snapshot для заданого періоду
+  """
+  def create_snapshot(period_type) do
+    {period_start, period_end} = get_period_bounds(period_type)
+
+    # Отримуємо статистику за період
+    stats = Feedbacks.get_summary_stats(%{from: period_start, to: period_end})
+
+    # Створюємо snapshot
+    %Snapshot{}
+    |> Snapshot.changeset(%{
+      period_type: period_type,
+      period_start: period_start,
+      period_end: period_end,
+      total_feedbacks: stats.total_count || 0,
+      avg_sentiment: stats.avg_sentiment || 0.0,
+      positive_count: stats.positive_count || 0,
+      neutral_count: stats.neutral_count || 0,
+      negative_count: stats.negative_count || 0,
+      sentiment_trend: calculate_sentiment_trend(period_type, stats.avg_sentiment || 0.0)
+    })
+    |> Repo.insert()
+  end
+
+  defp get_period_bounds("daily") do
+    now = DateTime.utc_now()
+    start_of_day = DateTime.new!(Date.utc_today(), ~T[00:00:00])
+    {start_of_day, now}
+  end
+
+  defp get_period_bounds("weekly") do
+    now = DateTime.utc_now()
+    days_since_monday = Date.day_of_week(Date.utc_today()) - 1
+    start_of_week = DateTime.add(now, -days_since_monday, :day)
+    start_of_week = DateTime.new!(DateTime.to_date(start_of_week), ~T[00:00:00])
+    {start_of_week, now}
+  end
+
+  defp get_period_bounds("monthly") do
+    now = DateTime.utc_now()
+    start_of_month = DateTime.new!(Date.utc_today() |> Date.beginning_of_month(), ~T[00:00:00])
+    {start_of_month, now}
+  end
+
+  defp calculate_sentiment_trend(period_type, current_sentiment) do
+    # Отримуємо попередній snapshot
+    previous = get_previous_snapshot(period_type)
+
+    if previous && previous.avg_sentiment != 0 do
+      ((current_sentiment - previous.avg_sentiment) / abs(previous.avg_sentiment)) * 100
+    else
+      0.0
+    end
+  end
+
+  defp get_previous_snapshot(period_type) do
+    shift_days =
+      case period_type do
+        "daily" -> -1
+        "weekly" -> -7
+        "monthly" -> -30
+      end
+
+    target_date = DateTime.utc_now() |> DateTime.add(shift_days, :day)
+
+    from(s in Snapshot,
+      where: s.period_type == ^period_type,
+      where: s.period_start <= ^target_date,
+      order_by: [desc: s.period_start],
+      limit: 1
+    )
+    |> Repo.one()
+  end
 
   @doc """
   Повертає останній snapshot для певного типу періоду
