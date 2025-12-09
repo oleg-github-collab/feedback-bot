@@ -151,4 +151,52 @@ defmodule FeedbackBot.AI.GPTClient do
       raw_response: raw_analysis
     }
   end
+
+  @doc """
+  Генерує довільний текст через GPT (для performance reviews, summaries, тощо)
+  """
+  def generate_text(prompt) do
+    api_key = Application.get_env(:feedback_bot, :openai)[:api_key]
+    model = Application.get_env(:feedback_bot, :openai)[:gpt_model] || "gpt-4o-mini"
+
+    headers = [
+      {"Authorization", "Bearer #{api_key}"},
+      {"Content-Type", "application/json"}
+    ]
+
+    body =
+      Jason.encode!(%{
+        model: model,
+        messages: [
+          %{
+            role: "system",
+            content:
+              "Ти — професійний бізнес-аналітик та HR експерт. Створюй чіткі, структуровані та actionable тексти українською мовою."
+          },
+          %{role: "user", content: prompt}
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      })
+
+    case HTTPoison.post(@api_url, body, headers, timeout: 60_000, recv_timeout: 60_000) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"choices" => [%{"message" => %{"content" => text}} | _]}} ->
+            {:ok, text}
+
+          error ->
+            Logger.error("Failed to parse GPT response: #{inspect(error)}")
+            {:error, "Failed to parse response"}
+        end
+
+      {:ok, %HTTPoison.Response{status_code: status_code, body: response_body}} ->
+        Logger.error("GPT API error #{status_code}: #{response_body}")
+        {:error, "API error: #{status_code}"}
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        Logger.error("HTTP error calling GPT API: #{inspect(reason)}")
+        {:error, "Network error: #{inspect(reason)}"}
+    end
+  end
 end

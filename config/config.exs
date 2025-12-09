@@ -66,7 +66,11 @@ config :feedback_bot, Oban,
        # Щодня о 15:00 UTC - щоденне нагадування
        {"0 15 * * *", FeedbackBot.Jobs.DailyReminderJob},
        # Щоп'ятниці о 16:00 UTC - тижнева статистика
-       {"0 16 * * 5", FeedbackBot.Jobs.WeeklyStatisticsJob}
+       {"0 16 * * 5", FeedbackBot.Jobs.WeeklyStatisticsJob},
+       # Кожні 2 тижні в понеділок о 10:00 UTC - performance reviews
+       {"0 10 * * 1", FeedbackBot.Jobs.PerformanceReviewJob},
+       # 1-го числа кожного місяця о 9:00 UTC - executive summary
+       {"0 9 1 * *", FeedbackBot.Jobs.ExecutiveSummaryJob}
      ]}
   ]
 
