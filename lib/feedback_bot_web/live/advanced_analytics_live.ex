@@ -106,6 +106,80 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
   end
 
   @impl true
+  def handle_event("filter", %{"employee_id" => emp_id, "sentiment" => sent, "search" => search}, socket) do
+    socket =
+      socket
+      |> assign(:selected_employee_id, parse_employee_id(emp_id))
+      |> assign(:sentiment_filter, sent)
+      |> assign(:search_term, search)
+      |> reload_with_filters()
+
+    {:noreply, socket}
+  end
+
+  def handle_event("set_period", %{"days" => days_str}, socket) do
+    days = String.to_integer(days_str)
+    period_end = DateTime.utc_now()
+    period_start = DateTime.add(period_end, -days * 24 * 60 * 60, :second)
+
+    socket =
+      socket
+      |> assign(:period_start, period_start)
+      |> assign(:period_end, period_end)
+      |> reload_with_filters()
+
+    {:noreply, socket}
+  end
+
+  defp parse_employee_id(""), do: nil
+  defp parse_employee_id(id), do: id
+
+  defp reload_with_filters(socket) do
+    try do
+      filters = build_filters(socket.assigns)
+      feedbacks = Feedbacks.filter_feedbacks(filters)
+      filtered_feedbacks = apply_search(feedbacks, socket.assigns.search_term)
+      summary = calculate_summary(filtered_feedbacks)
+
+      socket
+      |> assign(:feedbacks, filtered_feedbacks)
+      |> assign(:summary, summary)
+    rescue
+      e ->
+        Logger.error("Failed to reload with filters: #{inspect(e)}")
+        assign(socket, :error, "Помилка фільтрації: #{Exception.message(e)}")
+    end
+  end
+
+  defp build_filters(assigns) do
+    filters = %{from: assigns.period_start, to: assigns.period_end}
+
+    filters =
+      if assigns.selected_employee_id,
+        do: Map.put(filters, :employee_id, assigns.selected_employee_id),
+        else: filters
+
+    filters =
+      if assigns.sentiment_filter != "all",
+        do: Map.put(filters, :sentiment, assigns.sentiment_filter),
+        else: filters
+
+    filters
+  end
+
+  defp apply_search(feedbacks, ""), do: feedbacks
+  defp apply_search(feedbacks, nil), do: feedbacks
+
+  defp apply_search(feedbacks, term) do
+    normalized = String.downcase(term)
+
+    Enum.filter(feedbacks, fn f ->
+      (f.summary && String.contains?(String.downcase(f.summary), normalized)) ||
+        (f.transcription && String.contains?(String.downcase(f.transcription), normalized))
+    end)
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-slate-950 text-slate-100">
@@ -122,7 +196,54 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
         <div class="space-y-6">
           <div>
             <h1 class="text-4xl font-black text-white">Аналітика 2.0</h1>
-            <p class="text-slate-400 mt-2">Розширена аналітика працює</p>
+            <p class="text-slate-400 mt-2">Розширена аналітика з потужними зрізами</p>
+          </div>
+
+          <!-- Filters -->
+          <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4">
+            <form phx-change="filter">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-xs uppercase tracking-wide text-slate-400 mb-1">Співробітник</label>
+                  <select name="employee_id" class="w-full rounded-lg border border-slate-700 bg-slate-800 text-white px-3 py-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                    <option value="">Всі</option>
+                    <%= for emp <- @employees do %>
+                      <option value={emp.id} selected={emp.id == @selected_employee_id}><%= emp.name %></option>
+                    <% end %>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs uppercase tracking-wide text-slate-400 mb-1">Тональність</label>
+                  <select name="sentiment" class="w-full rounded-lg border border-slate-700 bg-slate-800 text-white px-3 py-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                    <option value="all" selected={@sentiment_filter == "all"}>Всі</option>
+                    <option value="positive" selected={@sentiment_filter == "positive"}>Позитивна</option>
+                    <option value="neutral" selected={@sentiment_filter == "neutral"}>Нейтральна</option>
+                    <option value="negative" selected={@sentiment_filter == "negative"}>Негативна</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs uppercase tracking-wide text-slate-400 mb-1">Пошук</label>
+                  <input
+                    type="text"
+                    name="search"
+                    value={@search_term}
+                    placeholder="Пошук по тексту..."
+                    class="w-full rounded-lg border border-slate-700 bg-slate-800 text-white px-3 py-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs uppercase tracking-wide text-slate-400 mb-1">Період</label>
+                  <select phx-change="set_period" name="days" class="w-full rounded-lg border border-slate-700 bg-slate-800 text-white px-3 py-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                    <option value="7">7 днів</option>
+                    <option value="30" selected>30 днів</option>
+                    <option value="90">90 днів</option>
+                  </select>
+                </div>
+              </div>
+            </form>
           </div>
 
           <!-- KPI Cards -->
