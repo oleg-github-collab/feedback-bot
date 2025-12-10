@@ -34,10 +34,16 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
 
       feedbacks = Feedbacks.filter_feedbacks(filters)
       summary = calculate_summary(feedbacks)
+      topics = extract_top_topics(feedbacks)
+      timeline = Enum.take(feedbacks, 20)
+      risks = extract_risks(feedbacks)
 
       socket
       |> assign(:feedbacks, feedbacks)
       |> assign(:summary, summary)
+      |> assign(:top_topics, topics)
+      |> assign(:timeline_data, timeline)
+      |> assign(:risk_register, risks)
     rescue
       e ->
         Logger.error("Failed to load analytics data: #{inspect(e)}")
@@ -45,8 +51,31 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
         socket
         |> assign(:feedbacks, [])
         |> assign(:summary, default_summary())
+        |> assign(:top_topics, [])
+        |> assign(:timeline_data, [])
+        |> assign(:risk_register, [])
         |> assign(:error, "Помилка завантаження даних: #{Exception.message(e)}")
     end
+  end
+
+  defp extract_top_topics(feedbacks) do
+    feedbacks
+    |> Enum.flat_map(fn f -> f.topics || [] end)
+    |> Enum.frequencies()
+    |> Enum.sort_by(fn {_topic, count} -> count end, :desc)
+    |> Enum.take(8)
+    |> Enum.map(fn {topic, count} -> %{topic: topic, count: count} end)
+  end
+
+  defp extract_risks(feedbacks) do
+    feedbacks
+    |> Enum.filter(fn f ->
+      (f.sentiment_label == "negative" && (f.sentiment_score || 0) < -0.1) ||
+        (f.urgency_score || 0) > 0.7 ||
+        (f.impact_score || 0) > 0.7
+    end)
+    |> Enum.sort_by(fn f -> -(f.urgency_score || 0) * (f.impact_score || 0) end)
+    |> Enum.take(10)
   end
 
   defp calculate_summary(feedbacks) do
@@ -140,10 +169,16 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
       feedbacks = Feedbacks.filter_feedbacks(filters)
       filtered_feedbacks = apply_search(feedbacks, socket.assigns.search_term)
       summary = calculate_summary(filtered_feedbacks)
+      topics = extract_top_topics(filtered_feedbacks)
+      timeline = Enum.take(filtered_feedbacks, 20)
+      risks = extract_risks(filtered_feedbacks)
 
       socket
       |> assign(:feedbacks, filtered_feedbacks)
       |> assign(:summary, summary)
+      |> assign(:top_topics, topics)
+      |> assign(:timeline_data, timeline)
+      |> assign(:risk_register, risks)
     rescue
       e ->
         Logger.error("Failed to reload with filters: #{inspect(e)}")
@@ -273,11 +308,92 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
             </div>
           </div>
 
+          <!-- Top Topics -->
           <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-6">
-            <h2 class="text-2xl font-bold text-white mb-4">Статус</h2>
-            <p class="text-green-400">✅ Реальні дані завантажено!</p>
-            <p class="text-slate-300 mt-2">Співробітників: <%= length(@employees) %></p>
-            <p class="text-slate-300">Фідбеків за період: <%= length(@feedbacks) %></p>
+            <h2 class="text-xl font-bold text-white mb-4">🔥 Топ теми</h2>
+            <%= if length(@top_topics) > 0 do %>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <%= for topic <- @top_topics do %>
+                  <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                    <p class="text-sm text-white font-semibold"><%= topic.topic %></p>
+                    <p class="text-2xl font-black text-emerald-400 mt-1"><%= topic.count %></p>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="text-slate-400">Немає тем для відображення</p>
+            <% end %>
+          </div>
+
+          <!-- Timeline -->
+          <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-6">
+            <h2 class="text-xl font-bold text-white mb-4">📊 Живий потік (останні 20)</h2>
+            <%= if length(@timeline_data) > 0 do %>
+              <div class="space-y-3 max-h-96 overflow-y-auto">
+                <%= for feedback <- @timeline_data do %>
+                  <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="flex-1">
+                        <p class="text-sm text-slate-300"><%= feedback.summary || "Без резюме" %></p>
+                        <%= if feedback.employee do %>
+                          <p class="text-xs text-slate-500 mt-1">👤 <%= feedback.employee.name %></p>
+                        <% end %>
+                      </div>
+                      <div class="flex flex-col items-end gap-1">
+                        <span class={[
+                          "px-2 py-1 rounded text-xs font-bold",
+                          case feedback.sentiment_label do
+                            "positive" -> "bg-green-500/20 text-green-400"
+                            "negative" -> "bg-red-500/20 text-red-400"
+                            _ -> "bg-slate-500/20 text-slate-400"
+                          end
+                        ]}>
+                          <%= feedback.sentiment_label || "?" %>
+                        </span>
+                        <p class="text-xs text-slate-500">
+                          <%= Calendar.strftime(feedback.inserted_at, "%d.%m %H:%M") %>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="text-slate-400">Немає фідбеків для відображення</p>
+            <% end %>
+          </div>
+
+          <!-- Risk Register -->
+          <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-6">
+            <h2 class="text-xl font-bold text-white mb-4">⚠️ Реєстр ризиків (топ 10)</h2>
+            <%= if length(@risk_register) > 0 do %>
+              <div class="space-y-3">
+                <%= for risk <- @risk_register do %>
+                  <div class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="flex-1">
+                        <p class="text-sm text-white font-semibold"><%= risk.summary || "Критичний фідбек" %></p>
+                        <%= if risk.employee do %>
+                          <p class="text-xs text-slate-400 mt-1">👤 <%= risk.employee.name %></p>
+                        <% end %>
+                      </div>
+                      <div class="flex gap-2">
+                        <div class="text-center">
+                          <p class="text-xs text-slate-400">U</p>
+                          <p class="text-sm font-bold text-orange-400"><%= Float.round(risk.urgency_score || 0, 2) %></p>
+                        </div>
+                        <div class="text-center">
+                          <p class="text-xs text-slate-400">I</p>
+                          <p class="text-sm font-bold text-red-400"><%= Float.round(risk.impact_score || 0, 2) %></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="text-green-400">✅ Ризикових фідбеків не виявлено!</p>
+            <% end %>
           </div>
         </div>
       </div>
