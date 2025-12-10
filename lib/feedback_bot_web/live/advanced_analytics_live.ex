@@ -1,15 +1,51 @@
 defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
   use FeedbackBotWeb, :live_view
+  require Logger
+
+  alias FeedbackBot.{Feedbacks, Employees}
 
   @impl true
   def mount(_params, _session, socket) do
+    period_end = DateTime.utc_now()
+    period_start = DateTime.add(period_end, -30 * 24 * 60 * 60, :second)
+
     socket =
       socket
       |> assign(:page_title, "Аналітика 2.0")
       |> assign(:active_nav, "/analytics")
+      |> assign(:period_start, period_start)
+      |> assign(:period_end, period_end)
+      |> assign(:selected_employee_id, nil)
+      |> assign(:search_term, "")
+      |> assign(:sentiment_filter, "all")
+      |> assign(:employees, list_employees_safe())
+      |> assign(:feedbacks, [])
+      |> assign(:summary, default_summary())
       |> assign(:error, nil)
 
     {:ok, socket}
+  end
+
+  defp list_employees_safe do
+    try do
+      Employees.list_active_employees()
+    rescue
+      e ->
+        Logger.error("Failed to load employees: #{inspect(e)}")
+        []
+    end
+  end
+
+  defp default_summary do
+    %{
+      total_feedbacks: 0,
+      avg_sentiment: 0.0,
+      avg_urgency: 0.0,
+      avg_impact: 0.0,
+      positive_share: 0.0,
+      negative_share: 0.0,
+      risky_feedbacks: 0
+    }
   end
 
   @impl true
@@ -32,10 +68,37 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
             <p class="text-slate-400 mt-2">Розширена аналітика працює</p>
           </div>
 
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-gradient-to-br from-emerald-500/20 to-emerald-900/20 border border-emerald-500/40 rounded-xl p-4">
+              <p class="text-xs uppercase tracking-wide text-slate-200/80">Всього фідбеків</p>
+              <p class="text-3xl font-black text-white mt-2"><%= @summary.total_feedbacks %></p>
+              <p class="text-xs text-slate-200/70 mt-2">Live processed</p>
+            </div>
+
+            <div class="bg-gradient-to-br from-blue-500/20 to-blue-900/20 border border-blue-500/40 rounded-xl p-4">
+              <p class="text-xs uppercase tracking-wide text-slate-200/80">Середній Sentiment</p>
+              <p class="text-3xl font-black text-white mt-2"><%= Float.round(@summary.avg_sentiment, 2) %></p>
+              <p class="text-xs text-slate-200/70 mt-2">Позитивні: <%= Float.round(@summary.positive_share * 100, 1) %>%</p>
+            </div>
+
+            <div class="bg-gradient-to-br from-rose-500/20 to-rose-900/20 border border-rose-500/40 rounded-xl p-4">
+              <p class="text-xs uppercase tracking-wide text-slate-200/80">Ризикові</p>
+              <p class="text-3xl font-black text-white mt-2"><%= @summary.risky_feedbacks %></p>
+              <p class="text-xs text-slate-200/70 mt-2">Негативні: <%= Float.round(@summary.negative_share * 100, 1) %>%</p>
+            </div>
+
+            <div class="bg-gradient-to-br from-amber-500/20 to-amber-900/20 border border-amber-500/40 rounded-xl p-4">
+              <p class="text-xs uppercase tracking-wide text-slate-200/80">Urgency / Impact</p>
+              <p class="text-3xl font-black text-white mt-2"><%= Float.round(@summary.avg_urgency, 2) %> / <%= Float.round(@summary.avg_impact, 2) %></p>
+              <p class="text-xs text-slate-200/70 mt-2">Середні показники</p>
+            </div>
+          </div>
+
           <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-6">
             <h2 class="text-2xl font-bold text-white mb-4">Статус</h2>
-            <p class="text-green-400">✅ Сторінка завантажилась успішно!</p>
-            <p class="text-slate-300 mt-2">Функціонал додається...</p>
+            <p class="text-green-400">✅ KPI картки додано!</p>
+            <p class="text-slate-300 mt-2">Співробітників: <%= length(@employees) %></p>
           </div>
         </div>
       </div>
