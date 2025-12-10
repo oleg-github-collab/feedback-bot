@@ -6,53 +6,20 @@ defmodule FeedbackBotWeb.AnalyticsLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    Logger.info("AnalyticsLive: Starting mount...")
+    Logger.info("AnalyticsLive: Mount started")
 
-    try do
-      # Завантажуємо дані одразу в mount з timeout захистом
-      task = Task.async(fn ->
-        %{
-          daily: Analytics.list_snapshots("daily", limit: 30) || [],
-          weekly: Analytics.list_snapshots("weekly", limit: 12) || [],
-          monthly: Analytics.list_snapshots("monthly", limit: 6) || []
-        }
-      end)
+    socket =
+      socket
+      |> assign(:page_title, "Аналітика - Зрізи")
+      |> assign(:active_nav, "/analytics/basic")
+      |> assign(:daily_snapshots, [])
+      |> assign(:weekly_snapshots, [])
+      |> assign(:monthly_snapshots, [])
+      |> assign(:selected_period, "weekly")
+      |> assign(:error, nil)
 
-      # Timeout 5 секунд
-      snapshots = Task.await(task, 5000)
-
-      Logger.info("AnalyticsLive: Loaded snapshots - daily: #{length(snapshots.daily)}, weekly: #{length(snapshots.weekly)}, monthly: #{length(snapshots.monthly)}")
-
-      socket =
-        socket
-        |> assign(:page_title, "Аналітика - Зрізи")
-        |> assign(:active_nav, "/analytics/basic")
-        |> assign(:daily_snapshots, snapshots.daily)
-        |> assign(:weekly_snapshots, snapshots.weekly)
-        |> assign(:monthly_snapshots, snapshots.monthly)
-        |> assign(:selected_period, "weekly")
-        |> assign(:error, nil)
-        |> assign(:loading, false)
-
-      {:ok, socket}
-    rescue
-      e ->
-        Logger.error("AnalyticsLive: Error in mount - #{Exception.message(e)}")
-        Logger.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
-
-        socket =
-          socket
-          |> assign(:page_title, "Аналітика - Зрізи")
-          |> assign(:active_nav, "/analytics/basic")
-          |> assign(:daily_snapshots, [])
-          |> assign(:weekly_snapshots, [])
-          |> assign(:monthly_snapshots, [])
-          |> assign(:selected_period, "weekly")
-          |> assign(:loading, false)
-          |> assign(:error, "Не вдалося завантажити дані зрізів. Помилка: #{Exception.message(e)}")
-
-        {:ok, socket}
-    end
+    Logger.info("AnalyticsLive: Mount completed")
+    {:ok, socket}
   end
 
   @impl true
@@ -84,13 +51,6 @@ defmodule FeedbackBotWeb.AnalyticsLive do
             <p class="text-sm text-red-300 mt-2"><%= @error %></p>
           </div>
         <% end %>
-
-        <%= if @loading do %>
-          <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-8 text-center">
-            <div class="animate-spin w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto"></div>
-            <p class="text-slate-400 mt-4">Завантаження даних...</p>
-          </div>
-        <% else %>
           <!-- Period Selector -->
           <div class="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
             <button
@@ -146,7 +106,6 @@ defmodule FeedbackBotWeb.AnalyticsLive do
           <%= if @selected_period == "monthly" do %>
             <.snapshots_section snapshots={@monthly_snapshots} period_name="Місячні зрізи" />
           <% end %>
-        <% end %>
       </div>
     </div>
     """
