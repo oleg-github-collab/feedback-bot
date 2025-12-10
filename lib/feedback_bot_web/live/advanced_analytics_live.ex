@@ -351,7 +351,7 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
                 id="volume-sentiment"
                 class="h-64 sm:h-72 lg:h-80 overflow-x-auto"
                 phx-hook="VolumeSentimentChart"
-                data-volume-sentiment={Jason.encode!(@volume_sentiment)}
+                data-volume-sentiment={safe_json(@volume_sentiment)}
               >
               </div>
             </div>
@@ -361,16 +361,16 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
                 <h2 class="text-lg sm:text-xl lg:text-2xl font-black text-white">Heatmap тональності</h2>
                 <span class="text-[10px] sm:text-xs text-slate-400">По днях та співробітниках</span>
               </div>
-              <div id="heatmap-chart" class="overflow-x-auto" phx-hook="HeatmapChart" data-heatmap={Jason.encode!(@heatmap_data)}></div>
+              <div id="heatmap-chart" class="overflow-x-auto" phx-hook="HeatmapChart" data-heatmap={safe_json(@heatmap_data)}></div>
             </div>
 
-            <%= if @selected_employee_id && length(@trend_data) > 0 do %>
+            <%= if @selected_employee_id && @trend_data && length(@trend_data) > 0 do %>
               <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
                 <div class="flex items-center justify-between mb-4">
                   <h2 class="text-2xl font-black text-white">Динаміка обраного</h2>
                   <span class="text-xs text-slate-400">Sentiment / Urgency / Impact</span>
                 </div>
-                <div id="trend-chart" phx-hook="TrendChart" data-trend={Jason.encode!(@trend_data)}></div>
+                <div id="trend-chart" phx-hook="TrendChart" data-trend={safe_json(@trend_data)}></div>
               </div>
             <% end %>
 
@@ -417,10 +417,10 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
                 <span class="text-xs text-slate-400">Стан періоду</span>
               </div>
               <div class="space-y-6">
-                <div id="sentiment-distribution-chart" class="h-40" phx-hook="DistributionChart" data-title="Тональність" data-distribution={Jason.encode!(@sentiment_distribution)}></div>
+                <div id="sentiment-distribution-chart" class="h-40" phx-hook="DistributionChart" data-title="Тональність" data-distribution={safe_json(@sentiment_distribution)}></div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div id="urgency-distribution-chart" class="h-40" phx-hook="DistributionChart" data-title="Терміновість" data-distribution={Jason.encode!(@urgency_distribution)}></div>
-                  <div id="impact-distribution-chart" class="h-40" phx-hook="DistributionChart" data-title="Вплив" data-distribution={Jason.encode!(@impact_distribution)}></div>
+                  <div id="urgency-distribution-chart" class="h-40" phx-hook="DistributionChart" data-title="Терміновість" data-distribution={safe_json(@urgency_distribution)}></div>
+                  <div id="impact-distribution-chart" class="h-40" phx-hook="DistributionChart" data-title="Вплив" data-distribution={safe_json(@impact_distribution)}></div>
                 </div>
               </div>
             </div>
@@ -430,9 +430,9 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
                 <h2 class="text-xl font-black text-white">Теми та інсайти</h2>
                 <span class="text-xs text-slate-400">Top 8</span>
               </div>
-              <div id="topic-bar-chart" class="h-60" phx-hook="TopicBarChart" data-topics={Jason.encode!(@topic_pareto)}></div>
+              <div id="topic-bar-chart" class="h-60" phx-hook="TopicBarChart" data-topics={safe_json(@topic_pareto)}></div>
               <div class="mt-4">
-                <div id="word-cloud" phx-hook="WordCloud" data-words={Jason.encode!(@word_cloud_data)}></div>
+                <div id="word-cloud" phx-hook="WordCloud" data-words={safe_json(@word_cloud_data)}></div>
               </div>
             </div>
 
@@ -456,7 +456,7 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
                     </div>
                   </div>
                 <% end %>
-                <%= if length(@risk_register) == 0 do %>
+                <%= if @risk_register && length(@risk_register) == 0 do %>
                   <p class="text-sm text-slate-400">Ризикових фідбеків не виявлено у вибраному періоді.</p>
                 <% end %>
               </div>
@@ -464,7 +464,7 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
 
             <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
               <h2 class="text-xl font-black text-white mb-3">Порівняння співробітників</h2>
-              <div id="comparison-chart" phx-hook="ComparisonChart" data-comparison={Jason.encode!(@comparison_data)}></div>
+              <div id="comparison-chart" phx-hook="ComparisonChart" data-comparison={safe_json(@comparison_data)}></div>
             </div>
           </div>
         </div>
@@ -648,4 +648,7 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
     </div>
     """
   end
+
+  defp safe_json(data) when is_nil(data), do: "[]"
+  defp safe_json(data), do: Jason.encode!(data)
 end
