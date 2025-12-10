@@ -8,55 +8,50 @@ defmodule FeedbackBotWeb.AnalyticsLive do
   def mount(_params, _session, socket) do
     Logger.info("AnalyticsLive: Starting mount...")
 
-    socket =
-      socket
-      |> assign(:page_title, "Аналітика - Зрізи")
-      |> assign(:active_nav, "/analytics/basic")
-      |> assign(:daily_snapshots, [])
-      |> assign(:weekly_snapshots, [])
-      |> assign(:monthly_snapshots, [])
-      |> assign(:selected_period, "weekly")
-      |> assign(:error, nil)
-      |> assign(:loading, true)
-
-    if connected?(socket) do
-      send(self(), :load_snapshots)
-    end
-
-    {:ok, socket}
-  end
-
-  @impl true
-  def handle_info(:load_snapshots, socket) do
-    Logger.info("AnalyticsLive: Loading snapshots...")
-
     try do
-      daily = Analytics.list_snapshots("daily", limit: 30) || []
-      weekly = Analytics.list_snapshots("weekly", limit: 12) || []
-      monthly = Analytics.list_snapshots("monthly", limit: 6) || []
+      # Завантажуємо дані одразу в mount з timeout захистом
+      task = Task.async(fn ->
+        %{
+          daily: Analytics.list_snapshots("daily", limit: 30) || [],
+          weekly: Analytics.list_snapshots("weekly", limit: 12) || [],
+          monthly: Analytics.list_snapshots("monthly", limit: 6) || []
+        }
+      end)
 
-      Logger.info("AnalyticsLive: Loaded snapshots - daily: #{length(daily)}, weekly: #{length(weekly)}, monthly: #{length(monthly)}")
+      # Timeout 5 секунд
+      snapshots = Task.await(task, 5000)
+
+      Logger.info("AnalyticsLive: Loaded snapshots - daily: #{length(snapshots.daily)}, weekly: #{length(snapshots.weekly)}, monthly: #{length(snapshots.monthly)}")
 
       socket =
         socket
-        |> assign(:daily_snapshots, daily)
-        |> assign(:weekly_snapshots, weekly)
-        |> assign(:monthly_snapshots, monthly)
-        |> assign(:loading, false)
+        |> assign(:page_title, "Аналітика - Зрізи")
+        |> assign(:active_nav, "/analytics/basic")
+        |> assign(:daily_snapshots, snapshots.daily)
+        |> assign(:weekly_snapshots, snapshots.weekly)
+        |> assign(:monthly_snapshots, snapshots.monthly)
+        |> assign(:selected_period, "weekly")
         |> assign(:error, nil)
+        |> assign(:loading, false)
 
-      {:noreply, socket}
+      {:ok, socket}
     rescue
       e ->
-        Logger.error("AnalyticsLive: Error loading snapshots - #{Exception.message(e)}")
+        Logger.error("AnalyticsLive: Error in mount - #{Exception.message(e)}")
         Logger.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
 
         socket =
           socket
+          |> assign(:page_title, "Аналітика - Зрізи")
+          |> assign(:active_nav, "/analytics/basic")
+          |> assign(:daily_snapshots, [])
+          |> assign(:weekly_snapshots, [])
+          |> assign(:monthly_snapshots, [])
+          |> assign(:selected_period, "weekly")
           |> assign(:loading, false)
-          |> assign(:error, "Не вдалося завантажити дані зрізів")
+          |> assign(:error, "Не вдалося завантажити дані зрізів. Помилка: #{Exception.message(e)}")
 
-        {:noreply, socket}
+        {:ok, socket}
     end
   end
 
