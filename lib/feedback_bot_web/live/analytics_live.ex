@@ -165,28 +165,28 @@ defmodule FeedbackBotWeb.AnalyticsLive do
         <div class="bg-slate-800/50 rounded-lg p-3">
           <p class="text-xs text-slate-400">Всього фідбеків</p>
           <p class="text-xl sm:text-2xl font-black text-emerald-400">
-            <%= get_data(@snapshot, "total_feedbacks", 0) %>
+            <%= @snapshot.total_feedbacks || 0 %>
           </p>
         </div>
 
         <div class="bg-slate-800/50 rounded-lg p-3">
           <p class="text-xs text-slate-400">Середній Sentiment</p>
           <p class="text-xl sm:text-2xl font-black text-blue-400">
-            <%= Float.round(get_data(@snapshot, "avg_sentiment", 0.0), 2) %>
+            <%= if @snapshot.avg_sentiment, do: Float.round(@snapshot.avg_sentiment, 2), else: 0.0 %>
           </p>
         </div>
 
         <div class="bg-slate-800/50 rounded-lg p-3">
           <p class="text-xs text-slate-400">Позитивні</p>
           <p class="text-xl sm:text-2xl font-black text-green-400">
-            <%= get_data(@snapshot, "positive_count", 0) %>
+            <%= @snapshot.positive_count || 0 %>
           </p>
         </div>
 
         <div class="bg-slate-800/50 rounded-lg p-3">
           <p class="text-xs text-slate-400">Негативні</p>
           <p class="text-xl sm:text-2xl font-black text-red-400">
-            <%= get_data(@snapshot, "negative_count", 0) %>
+            <%= @snapshot.negative_count || 0 %>
           </p>
         </div>
       </div>
@@ -200,12 +200,5 @@ defmodule FeedbackBotWeb.AnalyticsLive do
       </.link>
     </div>
     """
-  end
-
-  defp get_data(snapshot, key, default) do
-    case snapshot.data do
-      %{^key => value} when not is_nil(value) -> value
-      _ -> default
-    end
   end
 end
