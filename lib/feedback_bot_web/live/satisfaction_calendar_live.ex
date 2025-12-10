@@ -8,8 +8,8 @@ defmodule FeedbackBotWeb.SatisfactionCalendarLive do
     user_id = Map.get(session, "telegram_user_id")
 
     # Отримуємо дані за останні 3 місяці
-    three_months_ago = DateTime.add(DateTime.utc_now(), -90, :day)
-    now = DateTime.utc_now()
+    _three_months_ago = DateTime.add(DateTime.utc_now(), -90, :day)
+    _now = DateTime.utc_now()
 
     surveys =
       if user_id do

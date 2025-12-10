@@ -340,7 +340,7 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
                 <div class="relative flex-shrink-0">
                   <div class="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-rose-500/30 text-rose-300 flex items-center justify-center text-[8px] sm:text-[10px] font-bold cursor-help">?</div>
                   <div class="absolute right-0 top-5 w-40 sm:w-56 p-2 sm:p-3 bg-slate-900 border border-rose-500/50 text-white text-[10px] sm:text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
-                    Фідбеки з високою терміновістю/впливом (>0.7) або сильно негативні (<-0.1). Потребують негайної уваги!
+                    Фідбеки з високою терміновістю/впливом (&gt;0.7) або сильно негативні (&lt;-0.1). Потребують негайної уваги!
                   </div>
                 </div>
               </div>
