@@ -6,38 +6,57 @@ defmodule FeedbackBotWeb.AnalyticsLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    Logger.info("AnalyticsLive: Starting mount...")
+
+    socket =
+      socket
+      |> assign(:page_title, "Аналітика - Зрізи")
+      |> assign(:active_nav, "/analytics/basic")
+      |> assign(:daily_snapshots, [])
+      |> assign(:weekly_snapshots, [])
+      |> assign(:monthly_snapshots, [])
+      |> assign(:selected_period, "weekly")
+      |> assign(:error, nil)
+      |> assign(:loading, true)
+
+    if connected?(socket) do
+      send(self(), :load_snapshots)
+    end
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_info(:load_snapshots, socket) do
+    Logger.info("AnalyticsLive: Loading snapshots...")
+
     try do
-      daily_snapshots = Analytics.list_snapshots("daily", limit: 30)
-      weekly_snapshots = Analytics.list_snapshots("weekly", limit: 12)
-      monthly_snapshots = Analytics.list_snapshots("monthly", limit: 6)
+      daily = Analytics.list_snapshots("daily", limit: 30) || []
+      weekly = Analytics.list_snapshots("weekly", limit: 12) || []
+      monthly = Analytics.list_snapshots("monthly", limit: 6) || []
+
+      Logger.info("AnalyticsLive: Loaded snapshots - daily: #{length(daily)}, weekly: #{length(weekly)}, monthly: #{length(monthly)}")
 
       socket =
         socket
-        |> assign(:page_title, "Аналітика - Зрізи")
-        |> assign(:active_nav, "/analytics/basic")
-        |> assign(:daily_snapshots, daily_snapshots)
-        |> assign(:weekly_snapshots, weekly_snapshots)
-        |> assign(:monthly_snapshots, monthly_snapshots)
-        |> assign(:selected_period, "weekly")
+        |> assign(:daily_snapshots, daily)
+        |> assign(:weekly_snapshots, weekly)
+        |> assign(:monthly_snapshots, monthly)
+        |> assign(:loading, false)
         |> assign(:error, nil)
 
-      {:ok, socket}
+      {:noreply, socket}
     rescue
       e ->
-        Logger.error("AnalyticsLive mount error: #{inspect(e)}")
-        Logger.error("Stacktrace: #{inspect(__STACKTRACE__)}")
+        Logger.error("AnalyticsLive: Error loading snapshots - #{Exception.message(e)}")
+        Logger.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
 
         socket =
           socket
-          |> assign(:page_title, "Аналітика - Зрізи")
-          |> assign(:active_nav, "/analytics/basic")
-          |> assign(:daily_snapshots, [])
-          |> assign(:weekly_snapshots, [])
-          |> assign(:monthly_snapshots, [])
-          |> assign(:selected_period, "weekly")
-          |> assign(:error, "Помилка завантаження: #{Exception.message(e)}")
+          |> assign(:loading, false)
+          |> assign(:error, "Не вдалося завантажити дані зрізів")
 
-        {:ok, socket}
+        {:noreply, socket}
     end
   end
 
@@ -71,60 +90,67 @@ defmodule FeedbackBotWeb.AnalyticsLive do
           </div>
         <% end %>
 
-        <!-- Period Selector -->
-        <div class="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
-          <button
-            phx-click="select_period"
-            phx-value-period="daily"
-            class={[
-              "px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-sm sm:text-base border-2 transition-all",
-              if(@selected_period == "daily",
-                do: "bg-emerald-500 border-emerald-400 text-white shadow-lg",
-                else: "bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500"
-              )
-            ]}
-          >
-            📅 Щоденна
-          </button>
-          <button
-            phx-click="select_period"
-            phx-value-period="weekly"
-            class={[
-              "px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-sm sm:text-base border-2 transition-all",
-              if(@selected_period == "weekly",
-                do: "bg-emerald-500 border-emerald-400 text-white shadow-lg",
-                else: "bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500"
-              )
-            ]}
-          >
-            📊 Тижнева
-          </button>
-          <button
-            phx-click="select_period"
-            phx-value-period="monthly"
-            class={[
-              "px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-sm sm:text-base border-2 transition-all",
-              if(@selected_period == "monthly",
-                do: "bg-emerald-500 border-emerald-400 text-white shadow-lg",
-                else: "bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500"
-              )
-            ]}
-          >
-            📈 Місячна
-          </button>
-        </div>
+        <%= if @loading do %>
+          <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-8 text-center">
+            <div class="animate-spin w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto"></div>
+            <p class="text-slate-400 mt-4">Завантаження даних...</p>
+          </div>
+        <% else %>
+          <!-- Period Selector -->
+          <div class="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
+            <button
+              phx-click="select_period"
+              phx-value-period="daily"
+              class={[
+                "px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-sm sm:text-base border-2 transition-all",
+                if(@selected_period == "daily",
+                  do: "bg-emerald-500 border-emerald-400 text-white shadow-lg",
+                  else: "bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500"
+                )
+              ]}
+            >
+              📅 Щоденна
+            </button>
+            <button
+              phx-click="select_period"
+              phx-value-period="weekly"
+              class={[
+                "px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-sm sm:text-base border-2 transition-all",
+                if(@selected_period == "weekly",
+                  do: "bg-emerald-500 border-emerald-400 text-white shadow-lg",
+                  else: "bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500"
+                )
+              ]}
+            >
+              📊 Тижнева
+            </button>
+            <button
+              phx-click="select_period"
+              phx-value-period="monthly"
+              class={[
+                "px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-sm sm:text-base border-2 transition-all",
+                if(@selected_period == "monthly",
+                  do: "bg-emerald-500 border-emerald-400 text-white shadow-lg",
+                  else: "bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500"
+                )
+              ]}
+            >
+              📈 Місячна
+            </button>
+          </div>
 
-        <!-- Snapshots Display -->
-        <%= if @selected_period == "daily" do %>
-          <.snapshots_section snapshots={@daily_snapshots} period_name="Щоденні зрізи" />
-        <% end %>
+          <!-- Snapshots Display -->
+          <%= if @selected_period == "daily" do %>
+            <.snapshots_section snapshots={@daily_snapshots} period_name="Щоденні зрізи" />
+          <% end %>
 
-        <%= if @selected_period == "weekly" do %>
-          <.snapshots_section snapshots={@weekly_snapshots} period_name="Тижневі зрізи" />
-        <% end %>
+          <%= if @selected_period == "weekly" do %>
+            <.snapshots_section snapshots={@weekly_snapshots} period_name="Тижневі зрізи" />
+          <% end %>
 
-        <%= if @selected_period == "monthly" do %>
-          <.snapshots_section snapshots={@monthly_snapshots} period_name="Місячні зрізи" />
+          <%= if @selected_period == "monthly" do %>
+            <.snapshots_section snapshots={@monthly_snapshots} period_name="Місячні зрізи" />
+          <% end %>
         <% end %>
       </div>
     </div>
@@ -139,55 +165,7 @@ defmodule FeedbackBotWeb.AnalyticsLive do
       <%= if length(@snapshots) > 0 do %>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <%= for snapshot <- @snapshots do %>
-            <div class="bg-slate-900/70 border border-slate-800 rounded-lg sm:rounded-xl p-4 sm:p-6 hover:border-emerald-500/50 transition-all">
-              <!-- Period Header -->
-              <div class="mb-4">
-                <p class="text-xs text-slate-400">Період</p>
-                <p class="text-sm sm:text-base font-bold text-white">
-                  <%= Calendar.strftime(snapshot.period_start, "%d.%m.%Y") %> -
-                  <%= Calendar.strftime(snapshot.period_end, "%d.%m.%Y") %>
-                </p>
-              </div>
-
-              <!-- Stats Grid -->
-              <div class="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
-                <div class="bg-slate-800/50 rounded-lg p-3">
-                  <p class="text-xs text-slate-400">Всього фідбеків</p>
-                  <p class="text-xl sm:text-2xl font-black text-emerald-400">
-                    <%= snapshot.data["total_feedbacks"] || 0 %>
-                  </p>
-                </div>
-
-                <div class="bg-slate-800/50 rounded-lg p-3">
-                  <p class="text-xs text-slate-400">Середній Sentiment</p>
-                  <p class="text-xl sm:text-2xl font-black text-blue-400">
-                    <%= Float.round(snapshot.data["avg_sentiment"] || 0.0, 2) %>
-                  </p>
-                </div>
-
-                <div class="bg-slate-800/50 rounded-lg p-3">
-                  <p class="text-xs text-slate-400">Позитивні</p>
-                  <p class="text-xl sm:text-2xl font-black text-green-400">
-                    <%= snapshot.data["positive_count"] || 0 %>
-                  </p>
-                </div>
-
-                <div class="bg-slate-800/50 rounded-lg p-3">
-                  <p class="text-xs text-slate-400">Негативні</p>
-                  <p class="text-xl sm:text-2xl font-black text-red-400">
-                    <%= snapshot.data["negative_count"] || 0 %>
-                  </p>
-                </div>
-              </div>
-
-              <!-- View Details Link -->
-              <.link
-                navigate={~p"/analytics/#{snapshot.period_type}"}
-                class="inline-block w-full text-center px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors text-sm"
-              >
-                Переглянути деталі →
-              </.link>
-            </div>
+            <.snapshot_card snapshot={snapshot} />
           <% end %>
         </div>
       <% else %>
@@ -200,5 +178,66 @@ defmodule FeedbackBotWeb.AnalyticsLive do
       <% end %>
     </div>
     """
+  end
+
+  defp snapshot_card(assigns) do
+    ~H"""
+    <div class="bg-slate-900/70 border border-slate-800 rounded-lg sm:rounded-xl p-4 sm:p-6 hover:border-emerald-500/50 transition-all">
+      <!-- Period Header -->
+      <div class="mb-4">
+        <p class="text-xs text-slate-400">Період</p>
+        <p class="text-sm sm:text-base font-bold text-white">
+          <%= Calendar.strftime(@snapshot.period_start, "%d.%m.%Y") %> -
+          <%= Calendar.strftime(@snapshot.period_end, "%d.%m.%Y") %>
+        </p>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
+        <div class="bg-slate-800/50 rounded-lg p-3">
+          <p class="text-xs text-slate-400">Всього фідбеків</p>
+          <p class="text-xl sm:text-2xl font-black text-emerald-400">
+            <%= get_data(@snapshot, "total_feedbacks", 0) %>
+          </p>
+        </div>
+
+        <div class="bg-slate-800/50 rounded-lg p-3">
+          <p class="text-xs text-slate-400">Середній Sentiment</p>
+          <p class="text-xl sm:text-2xl font-black text-blue-400">
+            <%= Float.round(get_data(@snapshot, "avg_sentiment", 0.0), 2) %>
+          </p>
+        </div>
+
+        <div class="bg-slate-800/50 rounded-lg p-3">
+          <p class="text-xs text-slate-400">Позитивні</p>
+          <p class="text-xl sm:text-2xl font-black text-green-400">
+            <%= get_data(@snapshot, "positive_count", 0) %>
+          </p>
+        </div>
+
+        <div class="bg-slate-800/50 rounded-lg p-3">
+          <p class="text-xs text-slate-400">Негативні</p>
+          <p class="text-xl sm:text-2xl font-black text-red-400">
+            <%= get_data(@snapshot, "negative_count", 0) %>
+          </p>
+        </div>
+      </div>
+
+      <!-- View Details Link -->
+      <.link
+        navigate={~p"/analytics/#{@snapshot.period_type}"}
+        class="inline-block w-full text-center px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors text-sm"
+      >
+        Переглянути деталі →
+      </.link>
+    </div>
+    """
+  end
+
+  defp get_data(snapshot, key, default) do
+    case snapshot.data do
+      %{^key => value} when not is_nil(value) -> value
+      _ -> default
+    end
   end
 end
