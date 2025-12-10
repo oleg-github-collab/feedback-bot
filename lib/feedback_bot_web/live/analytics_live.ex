@@ -8,13 +8,27 @@ defmodule FeedbackBotWeb.AnalyticsLive do
   def mount(_params, _session, socket) do
     Logger.info("AnalyticsLive: Mount started")
 
+    # Безпечне завантаження даних
+    {daily, weekly, monthly} =
+      try do
+        d = Analytics.list_snapshots("daily", limit: 30) || []
+        w = Analytics.list_snapshots("weekly", limit: 12) || []
+        m = Analytics.list_snapshots("monthly", limit: 6) || []
+        Logger.info("Loaded snapshots: daily=#{length(d)}, weekly=#{length(w)}, monthly=#{length(m)}")
+        {d, w, m}
+      rescue
+        e ->
+          Logger.error("Error loading snapshots: #{inspect(e)}")
+          {[], [], []}
+      end
+
     socket =
       socket
       |> assign(:page_title, "Аналітика - Зрізи")
       |> assign(:active_nav, "/analytics/basic")
-      |> assign(:daily_snapshots, [])
-      |> assign(:weekly_snapshots, [])
-      |> assign(:monthly_snapshots, [])
+      |> assign(:daily_snapshots, daily)
+      |> assign(:weekly_snapshots, weekly)
+      |> assign(:monthly_snapshots, monthly)
       |> assign(:selected_period, "weekly")
       |> assign(:error, nil)
 
