@@ -19,11 +19,68 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
       |> assign(:search_term, "")
       |> assign(:sentiment_filter, "all")
       |> assign(:employees, list_employees_safe())
-      |> assign(:feedbacks, [])
-      |> assign(:summary, default_summary())
       |> assign(:error, nil)
+      |> load_data()
 
     {:ok, socket}
+  end
+
+  defp load_data(socket) do
+    try do
+      filters = %{
+        from: socket.assigns.period_start,
+        to: socket.assigns.period_end
+      }
+
+      feedbacks = Feedbacks.filter_feedbacks(filters)
+      summary = calculate_summary(feedbacks)
+
+      socket
+      |> assign(:feedbacks, feedbacks)
+      |> assign(:summary, summary)
+    rescue
+      e ->
+        Logger.error("Failed to load analytics data: #{inspect(e)}")
+
+        socket
+        |> assign(:feedbacks, [])
+        |> assign(:summary, default_summary())
+        |> assign(:error, "Помилка завантаження даних: #{Exception.message(e)}")
+    end
+  end
+
+  defp calculate_summary(feedbacks) do
+    total = length(feedbacks)
+
+    if total == 0 do
+      default_summary()
+    else
+      {sentiment_sum, urgency_sum, impact_sum, positive, negative, risky} =
+        Enum.reduce(feedbacks, {0.0, 0.0, 0.0, 0, 0, 0}, fn f, {s_sum, u_sum, i_sum, pos, neg, risk} ->
+          is_risky = (f.sentiment_label == "negative" && (f.sentiment_score || 0) < -0.1) ||
+                     (f.urgency_score || 0) > 0.7 ||
+                     (f.impact_score || 0) > 0.7
+
+          {
+            s_sum + (f.sentiment_score || 0.0),
+            u_sum + (f.urgency_score || 0.0),
+            i_sum + (f.impact_score || 0.0),
+            pos + if(f.sentiment_label == "positive", do: 1, else: 0),
+            neg + if(f.sentiment_label == "negative", do: 1, else: 0),
+            risk + if(is_risky, do: 1, else: 0)
+          }
+        end)
+
+      %{
+        total_feedbacks: total,
+        avg_sentiment: sentiment_sum / total,
+        avg_urgency: urgency_sum / total,
+        avg_impact: impact_sum / total,
+        positive_share: positive / total,
+        negative_share: negative / total,
+        risky_feedbacks: risky
+      }
+    end
   end
 
   defp list_employees_safe do
@@ -97,8 +154,9 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
 
           <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-6">
             <h2 class="text-2xl font-bold text-white mb-4">Статус</h2>
-            <p class="text-green-400">✅ KPI картки додано!</p>
+            <p class="text-green-400">✅ Реальні дані завантажено!</p>
             <p class="text-slate-300 mt-2">Співробітників: <%= length(@employees) %></p>
+            <p class="text-slate-300">Фідбеків за період: <%= length(@feedbacks) %></p>
           </div>
         </div>
       </div>
