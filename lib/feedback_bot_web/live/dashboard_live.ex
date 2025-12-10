@@ -92,18 +92,21 @@ defmodule FeedbackBotWeb.DashboardLive do
             value={if @daily_snapshot, do: @daily_snapshot.total_feedbacks, else: 0}
             sentiment={if @daily_snapshot, do: @daily_snapshot.avg_sentiment, else: 0}
             trend={if @daily_snapshot, do: @daily_snapshot.sentiment_trend, else: 0}
+            tooltip="Кількість оброблених фідбеків за сьогодні. Тональність показує загальний настрій (-1 до +1). Тренд порівнює з вчорашнім днем."
           />
           <.stat_card
             title="Цього тижня"
             value={if @weekly_snapshot, do: @weekly_snapshot.total_feedbacks, else: 0}
             sentiment={if @weekly_snapshot, do: @weekly_snapshot.avg_sentiment, else: 0}
             trend={if @weekly_snapshot, do: @weekly_snapshot.sentiment_trend, else: 0}
+            tooltip="Фідбеки за останні 7 днів. Середня тональність всіх відгуків. Тренд показує зміну порівняно з минулим тижнем."
           />
           <.stat_card
             title="Цього місяця"
             value={if @monthly_snapshot, do: @monthly_snapshot.total_feedbacks, else: 0}
             sentiment={if @monthly_snapshot, do: @monthly_snapshot.avg_sentiment, else: 0}
             trend={if @monthly_snapshot, do: @monthly_snapshot.sentiment_trend, else: 0}
+            tooltip="Фідбеки за поточний місяць. Показує загальну динаміку та якість зворотного зв'язку. Тренд порівнюється з минулим місяцем."
           />
         </div>
 
@@ -236,16 +239,30 @@ defmodule FeedbackBotWeb.DashboardLive do
   attr :value, :integer, required: true
   attr :sentiment, :float, required: true
   attr :trend, :float, required: true
+  attr :tooltip, :string, default: nil
 
   defp stat_card(assigns) do
     ~H"""
-    <div class="relative overflow-hidden rounded-xl sm:rounded-2xl bg-white shadow-xl border-3 sm:border-4 border-violet-200 active:border-violet-400 sm:hover:border-violet-400 transition-all duration-300 sm:transform sm:hover:-translate-y-2 sm:hover:shadow-violet-200">
+    <div class="relative overflow-hidden rounded-xl sm:rounded-2xl bg-white shadow-xl border-3 sm:border-4 border-violet-200 active:border-violet-400 sm:hover:border-violet-400 transition-all duration-300 sm:transform sm:hover:-translate-y-2 sm:hover:shadow-violet-200 group">
       <div class="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-violet-400 to-purple-400 opacity-10 rounded-full -mr-12 sm:-mr-16 -mt-12 sm:-mt-16">
       </div>
       <div class="p-4 sm:p-6 relative">
-        <h3 class="text-xs sm:text-sm font-bold uppercase text-gray-500 tracking-wider">
-          <%= @title %>
-        </h3>
+        <div class="flex items-start justify-between gap-2">
+          <h3 class="text-xs sm:text-sm font-bold uppercase text-gray-500 tracking-wider flex-1">
+            <%= @title %>
+          </h3>
+          <%= if @tooltip do %>
+            <div class="relative group/tooltip flex-shrink-0">
+              <div class="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-violet-200 text-violet-700 flex items-center justify-center text-[10px] sm:text-xs font-bold cursor-help">
+                ?
+              </div>
+              <div class="absolute right-0 top-6 w-48 sm:w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
+                <%= @tooltip %>
+                <div class="absolute -top-1 right-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+              </div>
+            </div>
+          <% end %>
+        </div>
         <p class="text-4xl sm:text-5xl font-black mt-2 sm:mt-3 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent leading-tight">
           <%= @value %>
         </p>
