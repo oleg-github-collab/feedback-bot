@@ -306,26 +306,58 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
 
           <!-- KPI Cards -->
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div class="bg-gradient-to-br from-emerald-500/20 to-emerald-900/20 border border-emerald-500/40 rounded-lg sm:rounded-xl p-3 sm:p-4">
-              <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-200/80">Всього фідбеків</p>
+            <div class="bg-gradient-to-br from-emerald-500/20 to-emerald-900/20 border border-emerald-500/40 rounded-lg sm:rounded-xl p-3 sm:p-4 group relative">
+              <div class="flex items-start justify-between gap-1">
+                <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-200/80 flex-1">Всього фідбеків</p>
+                <div class="relative flex-shrink-0">
+                  <div class="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-emerald-500/30 text-emerald-300 flex items-center justify-center text-[8px] sm:text-[10px] font-bold cursor-help">?</div>
+                  <div class="absolute right-0 top-5 w-40 sm:w-56 p-2 sm:p-3 bg-slate-900 border border-emerald-500/50 text-white text-[10px] sm:text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                    Загальна кількість оброблених фідбеків за вибраний період з урахуванням фільтрів
+                  </div>
+                </div>
+              </div>
               <p class="text-2xl sm:text-3xl font-black text-white mt-1 sm:mt-2"><%= @summary.total_feedbacks %></p>
               <p class="text-[10px] sm:text-xs text-slate-200/70 mt-1 sm:mt-2">Live processed</p>
             </div>
 
-            <div class="bg-gradient-to-br from-blue-500/20 to-blue-900/20 border border-blue-500/40 rounded-lg sm:rounded-xl p-3 sm:p-4">
-              <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-200/80">Середній Sentiment</p>
+            <div class="bg-gradient-to-br from-blue-500/20 to-blue-900/20 border border-blue-500/40 rounded-lg sm:rounded-xl p-3 sm:p-4 group relative">
+              <div class="flex items-start justify-between gap-1">
+                <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-200/80 flex-1">Середній Sentiment</p>
+                <div class="relative flex-shrink-0">
+                  <div class="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-blue-500/30 text-blue-300 flex items-center justify-center text-[8px] sm:text-[10px] font-bold cursor-help">?</div>
+                  <div class="absolute right-0 top-5 w-40 sm:w-56 p-2 sm:p-3 bg-slate-900 border border-blue-500/50 text-white text-[10px] sm:text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                    Середня тональність від -1 (дуже негативна) до +1 (дуже позитивна). Показує загальний настрій клієнтів
+                  </div>
+                </div>
+              </div>
               <p class="text-2xl sm:text-3xl font-black text-white mt-1 sm:mt-2"><%= Float.round(@summary.avg_sentiment, 2) %></p>
               <p class="text-[10px] sm:text-xs text-slate-200/70 mt-1 sm:mt-2">Позитивні: <%= Float.round(@summary.positive_share * 100, 1) %>%</p>
             </div>
 
-            <div class="bg-gradient-to-br from-rose-500/20 to-rose-900/20 border border-rose-500/40 rounded-lg sm:rounded-xl p-3 sm:p-4">
-              <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-200/80">Ризикові</p>
+            <div class="bg-gradient-to-br from-rose-500/20 to-rose-900/20 border border-rose-500/40 rounded-lg sm:rounded-xl p-3 sm:p-4 group relative">
+              <div class="flex items-start justify-between gap-1">
+                <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-200/80 flex-1">Ризикові</p>
+                <div class="relative flex-shrink-0">
+                  <div class="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-rose-500/30 text-rose-300 flex items-center justify-center text-[8px] sm:text-[10px] font-bold cursor-help">?</div>
+                  <div class="absolute right-0 top-5 w-40 sm:w-56 p-2 sm:p-3 bg-slate-900 border border-rose-500/50 text-white text-[10px] sm:text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                    Фідбеки з високою терміновістю/впливом (>0.7) або сильно негативні (<-0.1). Потребують негайної уваги!
+                  </div>
+                </div>
+              </div>
               <p class="text-2xl sm:text-3xl font-black text-white mt-1 sm:mt-2"><%= @summary.risky_feedbacks %></p>
               <p class="text-[10px] sm:text-xs text-slate-200/70 mt-1 sm:mt-2">Негативні: <%= Float.round(@summary.negative_share * 100, 1) %>%</p>
             </div>
 
-            <div class="bg-gradient-to-br from-amber-500/20 to-amber-900/20 border border-amber-500/40 rounded-lg sm:rounded-xl p-3 sm:p-4">
-              <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-200/80">Urgency / Impact</p>
+            <div class="bg-gradient-to-br from-amber-500/20 to-amber-900/20 border border-amber-500/40 rounded-lg sm:rounded-xl p-3 sm:p-4 group relative">
+              <div class="flex items-start justify-between gap-1">
+                <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-200/80 flex-1">Urgency / Impact</p>
+                <div class="relative flex-shrink-0">
+                  <div class="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-amber-500/30 text-amber-300 flex items-center justify-center text-[8px] sm:text-[10px] font-bold cursor-help">?</div>
+                  <div class="absolute right-0 top-5 w-40 sm:w-56 p-2 sm:p-3 bg-slate-900 border border-amber-500/50 text-white text-[10px] sm:text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                    Urgency - наскільки терміново потрібно відреагувати (0-1). Impact - наскільки проблема впливає на бізнес (0-1)
+                  </div>
+                </div>
+              </div>
               <p class="text-xl sm:text-2xl lg:text-3xl font-black text-white mt-1 sm:mt-2"><%= Float.round(@summary.avg_urgency, 2) %> / <%= Float.round(@summary.avg_impact, 2) %></p>
               <p class="text-[10px] sm:text-xs text-slate-200/70 mt-1 sm:mt-2">Середні показники</p>
             </div>
