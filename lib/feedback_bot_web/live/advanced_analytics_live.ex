@@ -5,26 +5,64 @@ defmodule FeedbackBotWeb.AdvancedAnalyticsLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(FeedbackBot.PubSub, "feedbacks")
+    require Logger
+
+    try do
+      if connected?(socket) do
+        Phoenix.PubSub.subscribe(FeedbackBot.PubSub, "feedbacks")
+      end
+
+      period_end = DateTime.utc_now()
+      period_start = DateTime.add(period_end, -30 * 24 * 60 * 60, :second)
+
+      socket =
+        socket
+        |> assign(:page_title, "Аналітика 2.0")
+        |> assign(:active_nav, "/analytics")
+        |> assign(:period_start, period_start)
+        |> assign(:period_end, period_end)
+        |> assign(:selected_employee_id, nil)
+        |> assign(:search_term, "")
+        |> assign(:sentiment_filter, "all")
+        |> assign(:employees, Employees.list_active_employees())
+        |> load_analytics_data()
+
+      {:ok, socket}
+    rescue
+      e ->
+        Logger.error("Analytics 2.0 mount error: #{inspect(e)}")
+        Logger.error("Stacktrace: #{inspect(__STACKTRACE__)}")
+
+        period_end = DateTime.utc_now()
+        period_start = DateTime.add(period_end, -30 * 24 * 60 * 60, :second)
+
+        socket =
+          socket
+          |> assign(:page_title, "Аналітика 2.0")
+          |> assign(:active_nav, "/analytics")
+          |> assign(:period_start, period_start)
+          |> assign(:period_end, period_end)
+          |> assign(:selected_employee_id, nil)
+          |> assign(:search_term, "")
+          |> assign(:sentiment_filter, "all")
+          |> assign(:employees, [])
+          |> assign(:feedbacks, [])
+          |> assign(:summary, %{total_feedbacks: 0, avg_sentiment: 0.0, avg_urgency: 0.0, avg_impact: 0.0, positive_share: 0.0, negative_share: 0.0, risky_feedbacks: 0})
+          |> assign(:volume_sentiment, [])
+          |> assign(:topic_pareto, [])
+          |> assign(:sentiment_distribution, [])
+          |> assign(:urgency_distribution, [])
+          |> assign(:impact_distribution, [])
+          |> assign(:risk_register, [])
+          |> assign(:heatmap_data, [])
+          |> assign(:word_cloud_data, [])
+          |> assign(:timeline_data, [])
+          |> assign(:comparison_data, [])
+          |> assign(:trend_data, [])
+          |> assign(:error, "MOUNT ERROR: #{Exception.message(e)}")
+
+        {:ok, socket}
     end
-
-    period_end = DateTime.utc_now()
-    period_start = DateTime.add(period_end, -30 * 24 * 60 * 60, :second)
-
-    socket =
-      socket
-      |> assign(:page_title, "Аналітика 2.0")
-      |> assign(:active_nav, "/analytics")
-      |> assign(:period_start, period_start)
-      |> assign(:period_end, period_end)
-      |> assign(:selected_employee_id, nil)
-      |> assign(:search_term, "")
-      |> assign(:sentiment_filter, "all")
-      |> assign(:employees, Employees.list_active_employees())
-      |> load_analytics_data()
-
-    {:ok, socket}
   end
 
   @impl true
