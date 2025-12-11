@@ -83,7 +83,7 @@ defmodule FeedbackBotWeb.CoreComponents do
   def top_nav(assigns) do
     ~H"""
     <div
-      class="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md"
+      class="sticky top-0 z-[100] border-b border-slate-800 bg-slate-950/95 backdrop-blur-md"
       phx-hook="MobileNav"
       id="mobile-nav-container"
     >
@@ -112,7 +112,7 @@ defmodule FeedbackBotWeb.CoreComponents do
           <button
             type="button"
             data-burger
-            class="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:bg-slate-800 transition-colors touch-manipulation"
+            class="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:bg-slate-800 transition-colors touch-manipulation relative z-[101]"
             aria-label="Toggle menu"
           >
             <span class="w-5 h-0.5 bg-slate-200 rounded-full transition-all duration-300 mb-1"></span>
@@ -124,13 +124,13 @@ defmodule FeedbackBotWeb.CoreComponents do
       <!-- Mobile Menu Backdrop -->
       <div
         data-backdrop
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden z-40"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden z-[9998]"
       >
       </div>
       <!-- Mobile Menu Drawer -->
       <nav
         data-mobile-menu
-        class="fixed top-0 right-0 h-full w-72 bg-slate-950 border-l border-slate-800 shadow-2xl transform translate-x-full transition-transform duration-300 ease-out lg:hidden overflow-y-auto z-50"
+        class="fixed top-0 right-0 h-full w-72 bg-slate-950 border-l border-slate-800 shadow-2xl transform translate-x-full transition-transform duration-300 ease-out lg:hidden overflow-y-auto z-[9999]"
       >
         <div class="p-6">
           <!-- Header -->
