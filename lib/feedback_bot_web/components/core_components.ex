@@ -83,7 +83,7 @@ defmodule FeedbackBotWeb.CoreComponents do
   def top_nav(assigns) do
     ~H"""
     <div
-      class="sticky top-0 z-[100] border-b border-slate-800 bg-slate-950/95 backdrop-blur-md"
+      class="sticky top-0 z-[2147480000] border-b border-slate-800 bg-slate-950/95 backdrop-blur-md"
       phx-hook="MobileNav"
       id="mobile-nav-container"
     >
@@ -124,13 +124,13 @@ defmodule FeedbackBotWeb.CoreComponents do
       <!-- Mobile Menu Backdrop -->
       <div
         data-backdrop
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden z-[9998]"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden z-[2147480000]"
       >
       </div>
       <!-- Mobile Menu Drawer -->
       <nav
         data-mobile-menu
-        class="fixed top-0 right-0 h-full w-72 bg-slate-950 border-l border-slate-800 shadow-2xl transform translate-x-full transition-transform duration-300 ease-out lg:hidden overflow-y-auto z-[9999]"
+        class="fixed top-0 right-0 h-full w-72 bg-slate-950 border-l border-slate-800 shadow-2xl transform translate-x-full transition-transform duration-300 ease-out lg:hidden overflow-y-auto z-[2147480001]"
       >
         <div class="p-6">
           <!-- Header -->

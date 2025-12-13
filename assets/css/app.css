@@ -129,6 +129,21 @@
   animation: 0.2s ease-out 0s normal forwards 1 fade-out-keys;
 }
 
+/* Mobile nav hardening for Telegram in-app */
+:root.mobile-menu-open,
+body.mobile-menu-open {
+  overflow: hidden;
+}
+
+#mobile-nav-container [data-backdrop] {
+  z-index: 2147483000;
+}
+
+#mobile-nav-container [data-mobile-menu] {
+  z-index: 2147483001;
+  position: fixed;
+}
+
 @keyframes fade-in-scale-keys {
   0% {
     scale: 0.95;
