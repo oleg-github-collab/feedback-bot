@@ -132,16 +132,46 @@
 /* Mobile nav hardening for Telegram in-app */
 :root.mobile-menu-open,
 body.mobile-menu-open {
-  overflow: hidden;
+  overflow: hidden !important;
 }
 
+/* Ensure portal is above everything */
+#mobile-nav-portal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483646 !important; /* Max safe z-index */
+  pointer-events: none !important;
+}
+
+/* Backdrop styling */
+#mobile-nav-portal > [data-backdrop],
+[data-backdrop] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483646 !important;
+  pointer-events: auto !important;
+}
+
+/* Menu drawer styling */
+#mobile-nav-portal > [data-mobile-menu],
+[data-mobile-menu] {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  z-index: 2147483647 !important; /* Highest possible */
+  pointer-events: auto !important;
+  padding-bottom: env(safe-area-inset-bottom, 0) !important;
+}
+
+/* Legacy support for non-portaled elements */
 #mobile-nav-container [data-backdrop] {
-  z-index: 2147483000;
+  z-index: 2147483646 !important;
 }
 
 #mobile-nav-container [data-mobile-menu] {
-  z-index: 2147483001;
-  position: fixed;
+  z-index: 2147483647 !important;
 }
 
 @keyframes fade-in-scale-keys {

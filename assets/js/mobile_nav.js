@@ -11,6 +11,16 @@ export const MobileNav = {
     this.backdrop = this.el.querySelector('[data-backdrop]')
     this.links = this.el.querySelectorAll('[data-mobile-link]')
 
+    // Portal menu + backdrop to <body> to escape any stacking contexts (Telegram webview quirks)
+    this.portal = document.getElementById('mobile-nav-portal')
+    if (!this.portal) {
+      this.portal = document.createElement('div')
+      this.portal.id = 'mobile-nav-portal'
+      document.body.appendChild(this.portal)
+    }
+    if (this.backdrop) this.portal.appendChild(this.backdrop)
+    if (this.menu) this.portal.appendChild(this.menu)
+
     // Burger button click
     this.burgers.forEach(btn => btn.addEventListener('click', () => this.toggle()))
 

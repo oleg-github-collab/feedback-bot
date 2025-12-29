@@ -173,6 +173,9 @@ defmodule FeedbackBot.Jobs.ProcessAudioJob do
           text: "📊 Відкрити Аналітику",
           web_app: %{url: "https://feedback-bot-production-5dda.up.railway.app"}
         }
+      ],
+      [
+        %{text: "🗑 Видалити цей фідбек", callback_data: "delete_feedback:#{feedback.id}"}
       ]
     ]
 

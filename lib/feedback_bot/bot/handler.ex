@@ -342,6 +342,161 @@ defmodule FeedbackBot.Bot.Handler do
     )
   end
 
+  # Обробка перезапису аудіо
+  def handle({:callback_query, %{data: "action:rerecord_audio"} = query}, _context) do
+    user_id = query.from.id
+    employee_id = FeedbackBot.Bot.State.get_state(user_id, :selected_employee)
+
+    ExGram.answer_callback_query(query.id, text: "🔄 Готово до перезапису")
+
+    if employee_id do
+      employee = Employees.get_employee(employee_id)
+
+      ExGram.edit_message_text(
+        """
+        🔄 *ПЕРЕЗАПИС АУДІО*
+
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        👤 *Співробітник:* #{employee.name}
+
+        Попереднє аудіо скасовано.
+        Надішліть НОВЕ голосове повідомлення.
+
+        💡 *Порада:* Говоріть чітко та без поспіху
+        """,
+        chat_id: query.message.chat.id,
+        message_id: query.message.message_id,
+        parse_mode: "Markdown"
+      )
+
+      # Очищаємо інформацію про попереднє аудіо
+      FeedbackBot.Bot.State.set_state(user_id, :last_voice_file_id, nil)
+      FeedbackBot.Bot.State.set_state(user_id, :last_voice_duration, nil)
+    end
+  end
+
+  # Обробка скасування обробки
+  def handle({:callback_query, %{data: "action:cancel_processing"} = query}, _context) do
+    user_id = query.from.id
+    FeedbackBot.Bot.State.clear_state(user_id)
+
+    ExGram.answer_callback_query(query.id, text: "❌ Обробку скасовано")
+
+    keyboard = [
+      [%{text: "🎤 Записати новий фідбек", callback_data: "action:start_feedback"}],
+      [%{text: "🏠 На початок", callback_data: "action:back_to_start"}]
+    ]
+
+    markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+    ExGram.edit_message_text(
+      """
+      ❌ *ОБРОБКУ СКАСОВАНО*
+
+      Фідбек НЕ було збережено.
+
+      Що б ви хотіли зробити далі?
+      """,
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
+      parse_mode: "Markdown",
+      reply_markup: markup
+    )
+  end
+
+  # Обробка видалення фідбеку
+  def handle({:callback_query, %{data: "delete_feedback:" <> feedback_id} = query}, _context) do
+    ExGram.answer_callback_query(query.id, text: "⚠️ Підтвердіть видалення")
+
+    keyboard = [
+      [%{text: "✅ Так, видалити", callback_data: "confirm_delete:#{feedback_id}"}],
+      [%{text: "❌ Ні, залишити", callback_data: "cancel_delete:#{feedback_id}"}]
+    ]
+
+    markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+    ExGram.send_message(
+      query.message.chat.id,
+      """
+      ⚠️ *ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ*
+
+      Ви впевнені що хочете видалити цей фідбек?
+
+      ⚠️ *Увага:* Дія незворотна!
+      Фідбек буде повністю видалено з бази даних та аналітики.
+
+      Підтвердіть дію:
+      """,
+      parse_mode: "Markdown",
+      reply_markup: markup
+    )
+  end
+
+  # Підтвердження видалення
+  def handle({:callback_query, %{data: "confirm_delete:" <> feedback_id} = query}, _context) do
+    case Feedbacks.get_feedback(feedback_id) do
+      nil ->
+        ExGram.answer_callback_query(query.id, text: "❌ Фідбек не знайдено")
+
+        ExGram.edit_message_text(
+          "❌ *Помилка:* Фідбек не знайдено або вже видалено",
+          chat_id: query.message.chat.id,
+          message_id: query.message.message_id,
+          parse_mode: "Markdown"
+        )
+
+      feedback ->
+        case Feedbacks.delete_feedback(feedback) do
+          {:ok, _deleted} ->
+            ExGram.answer_callback_query(query.id, text: "✅ Фідбек видалено")
+
+            keyboard = [
+              [%{text: "🎤 Записати новий фідбек", callback_data: "action:start_feedback"}],
+              [%{text: "🏠 На початок", callback_data: "action:back_to_start"}]
+            ]
+
+            markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
+            ExGram.edit_message_text(
+              """
+              ✅ *ФІДБЕК ВИДАЛЕНО*
+
+              Фідбек успішно видалено з бази даних.
+              Аналітика автоматично оновиться.
+
+              Що б ви хотіли зробити далі?
+              """,
+              chat_id: query.message.chat.id,
+              message_id: query.message.message_id,
+              parse_mode: "Markdown",
+              reply_markup: markup
+            )
+
+          {:error, _changeset} ->
+            ExGram.answer_callback_query(query.id, text: "❌ Помилка видалення")
+
+            ExGram.edit_message_text(
+              "❌ *Помилка при видаленні фідбеку*\n\nСпробуйте пізніше або зверніться до адміністратора.",
+              chat_id: query.message.chat.id,
+              message_id: query.message.message_id,
+              parse_mode: "Markdown"
+            )
+        end
+    end
+  end
+
+  # Скасування видалення
+  def handle({:callback_query, %{data: "cancel_delete:" <> _feedback_id} = query}, _context) do
+    ExGram.answer_callback_query(query.id, text: "✅ Видалення скасовано")
+
+    ExGram.edit_message_text(
+      "✅ Фідбек збережено. Видалення скасовано.",
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
+      parse_mode: "Markdown"
+    )
+  end
+
   # Обробка управління співробітниками
   def handle({:callback_query, %{data: "manage:add_employee"} = query}, _context) do
     user_id = query.from.id
@@ -962,6 +1117,18 @@ defmodule FeedbackBot.Bot.Handler do
       employee = Employees.get_employee(employee_id)
 
       if employee do
+        # Зберігаємо інформацію про останнє аудіо для можливості перезапису
+        FeedbackBot.Bot.State.set_state(from.id, :last_voice_file_id, voice.file_id)
+        FeedbackBot.Bot.State.set_state(from.id, :last_voice_duration, voice.duration)
+        FeedbackBot.Bot.State.set_state(from.id, :last_message_id, msg.message_id)
+
+        # Кнопка для перезапису
+        keyboard = [
+          [%{text: "🔄 Перезаписати аудіо", callback_data: "action:rerecord_audio"}],
+          [%{text: "❌ Скасувати обробку", callback_data: "action:cancel_processing"}]
+        ]
+        markup = %ExGram.Model.InlineKeyboardMarkup{inline_keyboard: keyboard}
+
         # НЕГАЙНЕ підтвердження отримання
         ExGram.send_message(
           msg.chat.id,
@@ -993,9 +1160,10 @@ defmodule FeedbackBot.Bot.Handler do
           ⏱ *Очікуваний час:* 20-40 секунд
 
           _Ви отримаєте повідомлення з результатами!_
-          _НЕ закривайте чат, зачекайте..._
+          _Якщо помилилися - можете перезаписати аудіо_
           """,
-          parse_mode: "Markdown"
+          parse_mode: "Markdown",
+          reply_markup: markup
         )
 
       # Запускаємо Oban job для обробки
