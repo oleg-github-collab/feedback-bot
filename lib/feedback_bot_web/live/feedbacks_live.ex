@@ -28,32 +28,32 @@ defmodule FeedbackBotWeb.FeedbacksLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-zinc-50">
+    <div class="min-h-screen bg-zinc-50 pt-14 lg:pt-0">
       <.top_nav active={@active_nav} />
-      <header class="border-b-4 border-black bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <.link navigate="/" class="text-sm font-bold hover:underline mb-2 inline-block">
+      <header class="border-b-2 sm:border-b-4 border-black bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-6">
+          <.link navigate="/" class="text-xs sm:text-sm font-bold hover:underline mb-2 inline-block">
             ← Назад
           </.link>
-          <h1 class="text-5xl font-black uppercase tracking-tight">
+          <h1 class="text-3xl sm:text-5xl font-black uppercase tracking-tight">
             Фідбеки
           </h1>
         </div>
       </header>
 
-      <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="space-y-4">
+      <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div class="space-y-3 sm:space-y-4">
           <%= for feedback <- @feedbacks do %>
             <div class="neo-brutal-card">
-              <div class="flex justify-between items-start mb-4">
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3 sm:mb-4">
                 <div class="flex-1">
-                  <h3 class="text-xl font-black"><%= feedback.employee.name %></h3>
-                  <p class="text-sm text-gray-600">
+                  <h3 class="text-lg sm:text-xl font-black"><%= feedback.employee.name %></h3>
+                  <p class="text-xs sm:text-sm text-gray-600">
                     <%= Calendar.strftime(feedback.inserted_at, "%d.%m.%Y о %H:%M") %>
                   </p>
                 </div>
                 <span class={[
-                  "px-3 py-1 text-sm font-black uppercase border-2 border-black",
+                  "px-2 sm:px-3 py-1 text-xs sm:text-sm font-black uppercase border-2 border-black self-start",
                   case feedback.sentiment_label do
                     "positive" -> "bg-green-300"
                     "negative" -> "bg-red-300"
@@ -61,8 +61,8 @@ defmodule FeedbackBotWeb.FeedbacksLive do
                   end
                 ]}>
                   <%= sentiment_emoji(feedback.sentiment_label) %>
-                  <%= feedback.sentiment_label %>
-                  (<%= Float.round(feedback.sentiment_score, 2) %>)
+                  <span class="hidden sm:inline"><%= feedback.sentiment_label %></span>
+                  <span class="text-[10px] sm:text-xs">(<%= Float.round(feedback.sentiment_score, 2) %>)</span>
                 </span>
               </div>
 

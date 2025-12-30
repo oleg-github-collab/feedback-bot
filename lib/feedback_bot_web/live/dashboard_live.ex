@@ -58,18 +58,18 @@ defmodule FeedbackBotWeb.DashboardLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50">
+    <div class="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 pt-14 lg:pt-0">
       <.top_nav active={@active_nav} />
       <!-- Header -->
       <header class="bg-white shadow-lg border-b-2 sm:border-b-4 border-violet-600">
-        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-6">
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent leading-tight">
+              <h1 class="text-2xl sm:text-4xl lg:text-5xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent leading-tight">
                 📊 FeedbackBot
               </h1>
-              <p class="mt-1 sm:mt-2 text-sm sm:text-base lg:text-lg font-semibold text-gray-600">
-                AI-powered Analytics & Insights
+              <p class="mt-1 text-xs sm:text-base lg:text-lg font-semibold text-gray-600">
+                AI-powered Analytics
               </p>
             </div>
           </div>
@@ -105,11 +105,11 @@ defmodule FeedbackBotWeb.DashboardLive do
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <!-- Sentiment Trend Chart -->
           <div class="neo-brutal-card">
-            <h2 class="text-lg sm:text-xl lg:text-2xl font-black uppercase mb-3 sm:mb-4 flex items-center gap-2">
-              <span>📈</span>
-              <span>Тренд Тональності (30 днів)</span>
+            <h2 class="text-base sm:text-xl lg:text-2xl font-black uppercase mb-3 sm:mb-4 flex items-center gap-2">
+              <span class="text-lg sm:text-2xl">📈</span>
+              <span class="leading-tight">Тренд Тональності</span>
             </h2>
-            <div class="h-64 sm:h-72 lg:h-80">
+            <div class="h-56 sm:h-72 lg:h-80">
               <div
                 id="sentiment-trend-chart"
                 phx-hook="SentimentTrendChart"
@@ -118,14 +118,14 @@ defmodule FeedbackBotWeb.DashboardLive do
               >
               </div>
             </div>
-            <div class="mt-4 flex gap-2 text-xs font-bold text-gray-600">
+            <div class="mt-3 flex flex-wrap gap-2 text-[10px] sm:text-xs font-bold text-gray-600">
               <div class="flex items-center gap-1">
-                <div class="w-3 h-3 bg-violet-500 rounded-full"></div>
-                <span>Тональність (-1 до +1)</span>
+                <div class="w-2 h-2 sm:w-3 sm:h-3 bg-violet-500 rounded-full"></div>
+                <span>Тональність</span>
               </div>
               <div class="flex items-center gap-1">
-                <div class="w-3 h-0.5 bg-yellow-500"></div>
-                <span>Кількість фідбеків</span>
+                <div class="w-2 h-0.5 sm:w-3 bg-yellow-500"></div>
+                <span>Кількість</span>
               </div>
             </div>
           </div>
@@ -133,22 +133,22 @@ defmodule FeedbackBotWeb.DashboardLive do
           <!-- Recent Feedbacks -->
           <div class="neo-brutal-card">
             <div class="flex justify-between items-center mb-3 sm:mb-4">
-              <h2 class="text-lg sm:text-xl lg:text-2xl font-black uppercase">
+              <h2 class="text-base sm:text-xl lg:text-2xl font-black uppercase">
                 Останні Фідбеки
               </h2>
-              <.link navigate="/feedbacks" class="neo-brutal-btn-sm text-xs sm:text-sm">
+              <.link navigate="/feedbacks" class="neo-brutal-btn-sm text-[10px] sm:text-sm px-2 sm:px-3">
                 Всі →
               </.link>
             </div>
-            <div class="space-y-3">
+            <div class="space-y-2 sm:space-y-3">
               <%= for feedback <- @recent_feedbacks do %>
-                <div class="border-2 border-black p-3 bg-white">
-                  <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                      <p class="font-bold text-sm">
+                <div class="border-2 border-black p-2 sm:p-3 bg-white">
+                  <div class="flex justify-between items-start gap-2">
+                    <div class="flex-1 min-w-0">
+                      <p class="font-bold text-xs sm:text-sm truncate">
                         <%= feedback.employee.name %>
                       </p>
-                      <p class="text-xs text-gray-600 mt-1 line-clamp-2">
+                      <p class="text-[10px] sm:text-xs text-gray-600 mt-1 line-clamp-2">
                         <%= feedback.summary %>
                       </p>
                     </div>
@@ -252,36 +252,36 @@ defmodule FeedbackBotWeb.DashboardLive do
 
   defp stat_card(assigns) do
     ~H"""
-    <div class="relative overflow-hidden rounded-xl sm:rounded-2xl bg-white shadow-xl border-3 sm:border-4 border-violet-200 active:border-violet-400 sm:hover:border-violet-400 transition-all duration-300 sm:transform sm:hover:-translate-y-2 sm:hover:shadow-violet-200 group">
-      <div class="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-violet-400 to-purple-400 opacity-10 rounded-full -mr-12 sm:-mr-16 -mt-12 sm:-mt-16">
+    <div class="relative overflow-hidden rounded-lg sm:rounded-2xl bg-white shadow-lg border-2 sm:border-4 border-violet-200 active:border-violet-400 sm:hover:border-violet-400 transition-all duration-300 sm:transform sm:hover:-translate-y-2 sm:hover:shadow-violet-200">
+      <div class="absolute top-0 right-0 w-20 h-20 sm:w-32 sm:h-32 bg-gradient-to-br from-violet-400 to-purple-400 opacity-10 rounded-full -mr-10 sm:-mr-16 -mt-10 sm:-mt-16">
       </div>
-      <div class="p-4 sm:p-6 relative">
-        <div class="flex items-start justify-between gap-2">
-          <h3 class="text-xs sm:text-sm font-bold uppercase text-gray-500 tracking-wider flex-1">
+      <div class="p-3 sm:p-6 relative">
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <h3 class="text-[10px] sm:text-sm font-bold uppercase text-gray-500 tracking-wide flex-1 leading-tight">
             <%= @title %>
           </h3>
           <%= if @tooltip do %>
-            <div class="relative group/tooltip flex-shrink-0">
-              <div class="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-violet-200 text-violet-700 flex items-center justify-center text-[10px] sm:text-xs font-bold cursor-help">
+            <div class="relative group/tooltip flex-shrink-0 hidden sm:block">
+              <div class="w-5 h-5 rounded-full bg-violet-200 text-violet-700 flex items-center justify-center text-xs font-bold cursor-help">
                 ?
               </div>
-              <div class="absolute right-0 top-6 w-48 sm:w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
+              <div class="absolute right-0 top-6 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
                 <%= @tooltip %>
                 <div class="absolute -top-1 right-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
               </div>
             </div>
           <% end %>
         </div>
-        <p class="text-4xl sm:text-5xl font-black mt-2 sm:mt-3 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent leading-tight">
+        <p class="text-3xl sm:text-5xl font-black mt-1 sm:mt-3 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent leading-none">
           <%= @value %>
         </p>
-        <div class="mt-3 sm:mt-4 space-y-1.5 sm:space-y-2">
+        <div class="mt-2 sm:mt-4 space-y-1 sm:space-y-2">
           <div class="flex items-center justify-between gap-2">
-            <span class="text-[10px] sm:text-xs font-semibold text-gray-600 flex-shrink-0">
+            <span class="text-[10px] sm:text-xs font-semibold text-gray-600">
               Тональність:
             </span>
             <span class={[
-              "px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap",
+              "px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold",
               sentiment_badge_color(@sentiment)
             ]}>
               <%= format_sentiment(@sentiment) %>
@@ -289,11 +289,11 @@ defmodule FeedbackBotWeb.DashboardLive do
           </div>
           <%= if @trend != 0 do %>
             <div class="flex items-center justify-between gap-2">
-              <span class="text-[10px] sm:text-xs font-semibold text-gray-600 flex-shrink-0">
+              <span class="text-[10px] sm:text-xs font-semibold text-gray-600">
                 Тренд:
               </span>
               <span class={[
-                "px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap flex items-center gap-1",
+                "px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold flex items-center gap-0.5 sm:gap-1",
                 if(@trend > 0, do: "bg-green-100 text-green-700", else: "bg-red-100 text-red-700")
               ]}>
                 <span><%= if @trend > 0, do: "↑", else: "↓" %></span>
@@ -312,17 +312,21 @@ defmodule FeedbackBotWeb.DashboardLive do
   defp sentiment_badge(assigns) do
     ~H"""
     <span class={[
-      "px-2 py-1 text-xs font-black uppercase border-2 border-black",
+      "px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-black uppercase border-2 border-black whitespace-nowrap flex-shrink-0",
       case @sentiment do
         "positive" -> "bg-green-300"
         "negative" -> "bg-red-300"
         _ -> "bg-gray-300"
       end
     ]}>
-      <%= @sentiment %>
+      <%= sentiment_icon(@sentiment) %>
     </span>
     """
   end
+
+  defp sentiment_icon("positive"), do: "😊"
+  defp sentiment_icon("negative"), do: "😟"
+  defp sentiment_icon(_), do: "😐"
 
 
   defp sentiment_color(sentiment) when sentiment > 0.3, do: "text-green-600"

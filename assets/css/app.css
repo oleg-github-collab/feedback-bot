@@ -52,18 +52,18 @@
 /* Neobrutalism Design System */
 
 @layer components {
-  /* Cards */
+  /* Cards - Mobile optimized */
   .neo-brutal-card {
-    @apply bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)];
+    @apply bg-white border-2 sm:border-4 border-black p-3 sm:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)];
   }
 
-  /* Buttons */
+  /* Buttons - Mobile optimized */
   .neo-brutal-btn {
-    @apply px-6 py-3 font-black uppercase border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px];
+    @apply px-4 sm:px-6 py-2 sm:py-3 font-black uppercase border-2 sm:border-4 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all active:shadow-none active:translate-x-[3px] active:translate-y-[3px] sm:hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:hover:translate-x-[2px] sm:hover:translate-y-[2px];
   }
 
   .neo-brutal-btn-sm {
-    @apply px-3 py-2 text-sm font-black uppercase border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px];
+    @apply px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm font-black uppercase border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all active:shadow-none active:translate-x-[2px] active:translate-y-[2px] sm:hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)];
   }
 
   /* Inputs */
