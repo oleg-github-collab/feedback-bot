@@ -6,10 +6,8 @@
 @layer base {
   /* Ensure clickability in Telegram WebApp */
   html, body {
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    -webkit-user-select: none;
-    user-select: none;
+    touch-action: auto;
+    -webkit-tap-highlight-color: rgba(139, 92, 246, 0.1);
   }
 
   /* Fix for Telegram WebApp viewport issues */
@@ -184,43 +182,23 @@ body.mobile-menu-open {
   overflow: hidden !important;
 }
 
-/* Ensure portal is above everything */
-#mobile-nav-portal {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 2147483646 !important; /* Max safe z-index */
-  pointer-events: none !important;
-}
-
-/* Backdrop styling */
-#mobile-nav-portal > [data-backdrop],
+/* Backdrop styling - NO PORTAL */
 [data-backdrop] {
   position: fixed !important;
   inset: 0 !important;
-  z-index: 2147483646 !important;
-  pointer-events: auto !important;
+  z-index: 9998 !important;
 }
 
-/* Menu drawer styling */
-#mobile-nav-portal > [data-mobile-menu],
+/* Menu drawer styling - NO PORTAL */
 [data-mobile-menu] {
   position: fixed !important;
   top: 0 !important;
   right: 0 !important;
   height: 100dvh !important;
   max-height: 100dvh !important;
-  z-index: 2147483647 !important; /* Highest possible */
+  z-index: 9999 !important;
   pointer-events: auto !important;
   padding-bottom: env(safe-area-inset-bottom, 0) !important;
-}
-
-/* Legacy support for non-portaled elements */
-#mobile-nav-container [data-backdrop] {
-  z-index: 2147483646 !important;
-}
-
-#mobile-nav-container [data-mobile-menu] {
-  z-index: 2147483647 !important;
 }
 
 @keyframes fade-in-scale-keys {

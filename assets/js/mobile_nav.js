@@ -1,6 +1,7 @@
 /**
  * Mobile Navigation - Burger Menu
  * Touch-optimized navigation with smooth animations
+ * SIMPLIFIED - NO PORTAL to avoid blocking clicks
  */
 
 export const MobileNav = {
@@ -11,31 +12,17 @@ export const MobileNav = {
     this.backdrop = this.el.querySelector('[data-backdrop]')
     this.links = this.el.querySelectorAll('[data-mobile-link]')
 
-    // Portal menu + backdrop to <body> to escape any stacking contexts (Telegram webview quirks)
-    this.portal = document.getElementById('mobile-nav-portal')
-    if (!this.portal) {
-      this.portal = document.createElement('div')
-      this.portal.id = 'mobile-nav-portal'
-      // Portal should NEVER block clicks - it's just a positioning container
-      this.portal.style.cssText = 'position: fixed; inset: 0; z-index: 99999; pointer-events: none;'
-      document.body.appendChild(this.portal)
-    }
-
-    // Setup backdrop - initially hidden with pointer-events: none
-    if (this.backdrop) {
-      this.backdrop.style.pointerEvents = 'none'
-      this.portal.appendChild(this.backdrop)
-    }
-
-    // Setup menu - initially hidden off-screen but should be interactive when visible
-    if (this.menu) {
-      this.menu.style.pointerEvents = 'auto'
-      this.menu.style.zIndex = '100000'
-      this.portal.appendChild(this.menu)
-    }
+    // NO PORTAL - elements stay in DOM where they belong
+    // This prevents the pointer-events blocking issue
 
     // Burger button click
-    this.burgers.forEach(btn => btn.addEventListener('click', () => this.toggle()))
+    this.burgers.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        this.toggle()
+      })
+    })
 
     // Backdrop click to close
     if (this.backdrop) {
@@ -66,12 +53,6 @@ export const MobileNav = {
 
   open() {
     this.isOpen = true
-
-    // Enable backdrop clicks
-    if (this.backdrop) {
-      this.backdrop.style.pointerEvents = 'auto'
-    }
-
     this.menu?.classList.remove('translate-x-full')
     this.menu?.classList.add('translate-x-0')
     this.backdrop?.classList.remove('opacity-0', 'pointer-events-none')
@@ -93,12 +74,6 @@ export const MobileNav = {
 
   close() {
     this.isOpen = false
-
-    // Disable backdrop clicks
-    if (this.backdrop) {
-      this.backdrop.style.pointerEvents = 'none'
-    }
-
     this.menu?.classList.remove('translate-x-0')
     this.menu?.classList.add('translate-x-full')
     this.backdrop?.classList.remove('opacity-100')
