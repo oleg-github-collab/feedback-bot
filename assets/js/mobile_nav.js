@@ -16,10 +16,21 @@ export const MobileNav = {
     if (!this.portal) {
       this.portal = document.createElement('div')
       this.portal.id = 'mobile-nav-portal'
+      // Ensure the portal has a very high z-index to appear above everything
+      this.portal.style.cssText = 'position: fixed; inset: 0; z-index: 99999; pointer-events: none;'
       document.body.appendChild(this.portal)
     }
-    if (this.backdrop) this.portal.appendChild(this.backdrop)
-    if (this.menu) this.portal.appendChild(this.menu)
+    if (this.backdrop) {
+      // Make backdrop clickable
+      this.backdrop.style.pointerEvents = 'auto'
+      this.portal.appendChild(this.backdrop)
+    }
+    if (this.menu) {
+      // Ensure menu is clickable and visible
+      this.menu.style.pointerEvents = 'auto'
+      this.menu.style.zIndex = '100000'
+      this.portal.appendChild(this.menu)
+    }
 
     // Burger button click
     this.burgers.forEach(btn => btn.addEventListener('click', () => this.toggle()))
