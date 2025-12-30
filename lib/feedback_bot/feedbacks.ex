@@ -6,6 +6,7 @@ defmodule FeedbackBot.Feedbacks do
   import Ecto.Query, warn: false
   alias FeedbackBot.Repo
   alias FeedbackBot.Feedbacks.Feedback
+  alias FeedbackBot.AI.GPTClient
 
   @doc """
   Повертає список усіх фідбеків
@@ -34,6 +35,16 @@ defmodule FeedbackBot.Feedbacks do
   end
 
   @doc """
+  Отримує фідбек за ID або повертає nil
+  """
+  def get_feedback(id) do
+    case Repo.get(Feedback, id) do
+      nil -> nil
+      feedback -> Repo.preload(feedback, :employee)
+    end
+  end
+
+  @doc """
   Створює новий фідбек
   """
   def create_feedback(attrs \\ %{}) do
@@ -50,6 +61,45 @@ defmodule FeedbackBot.Feedbacks do
     |> Feedback.changeset(attrs)
     |> Repo.update()
   end
+
+  @doc """
+  Перезаписує транскрипцію, повторно запускає GPT-аналіз і оновлює фідбек.
+  """
+  def reanalyze_feedback(%Feedback{} = feedback, transcription) when is_binary(transcription) do
+    cleaned = String.trim(transcription)
+
+    if cleaned == "" do
+      {:error, :empty_transcription}
+    else
+      with {:ok, analysis} <- GPTClient.analyze_feedback(cleaned, feedback.employee_id),
+           {:ok, updated} <-
+             update_feedback(feedback, %{
+               transcription: cleaned,
+               summary: analysis.summary,
+               sentiment_score: analysis.sentiment_score,
+               sentiment_label: analysis.sentiment_label,
+               mood_intensity: analysis.mood_intensity,
+               key_points: analysis.key_points,
+               issues: analysis.issues,
+               strengths: analysis.strengths,
+               improvement_areas: analysis.improvement_areas,
+               topics: analysis.topics,
+               action_items: analysis.action_items,
+               urgency_score: analysis.urgency_score,
+               impact_score: analysis.impact_score,
+               trend_direction: analysis.trend_direction,
+               raw_ai_response: analysis.raw_response,
+               processing_status: "completed"
+             }) do
+        {:ok, Repo.preload(updated, :employee)}
+      else
+        {:error, _} = error -> error
+        other -> {:error, other}
+      end
+    end
+  end
+
+  def reanalyze_feedback(_feedback, _transcription), do: {:error, :invalid_feedback}
 
   @doc """
   Видаляє фідбек

@@ -45,22 +45,14 @@ defmodule FeedbackBotWeb.DashboardLive do
        |> assign(:weekly_snapshot, nil)
        |> assign(:monthly_snapshot, nil)
        |> assign(:recent_feedbacks, [])
-        |> assign(:employees, [])
+       |> assign(:employees, [])
        |> assign(:sentiment_trend, [])}
     end
   end
 
   @impl true
-  def handle_info({:new_feedback, _feedback}, socket) do
-    # Reload dashboard data when new feedback arrives
-    latest_daily = Analytics.get_latest_snapshot("daily")
-    recent_feedbacks = Feedbacks.list_recent_feedbacks(5)
-    sentiment_trend = Analytics.get_sentiment_trend_data("daily", 30)
-
-    {:noreply, socket
-     |> assign(:daily_snapshot, latest_daily)
-     |> assign(:recent_feedbacks, recent_feedbacks)
-     |> assign(:sentiment_trend, sentiment_trend)}
+  def handle_info({type, _feedback}, socket) when type in [:new_feedback, :feedback_updated, :feedback_deleted] do
+    {:noreply, refresh_dashboard_assigns(socket)}
   end
 
   @impl true
@@ -396,4 +388,19 @@ defmodule FeedbackBotWeb.DashboardLive do
   defp format_trend(trend) when is_integer(trend), do: abs(trend)
   defp format_trend(nil), do: 0
   defp format_trend(_), do: 0
+
+  defp refresh_dashboard_assigns(socket) do
+    latest_daily = Analytics.get_latest_snapshot("daily")
+    latest_weekly = Analytics.get_latest_snapshot("weekly")
+    latest_monthly = Analytics.get_latest_snapshot("monthly")
+    recent_feedbacks = Feedbacks.list_recent_feedbacks(5)
+    sentiment_trend = Analytics.get_sentiment_trend_data("daily", 30)
+
+    socket
+    |> assign(:daily_snapshot, latest_daily)
+    |> assign(:weekly_snapshot, latest_weekly)
+    |> assign(:monthly_snapshot, latest_monthly)
+    |> assign(:recent_feedbacks, recent_feedbacks)
+    |> assign(:sentiment_trend, sentiment_trend)
+  end
 end

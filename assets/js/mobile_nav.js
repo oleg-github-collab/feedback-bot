@@ -21,16 +21,15 @@ export const MobileNav = {
       document.body.appendChild(this.portal)
     }
     if (this.backdrop) {
-      // Make backdrop clickable
-      this.backdrop.style.pointerEvents = 'auto'
       this.portal.appendChild(this.backdrop)
     }
     if (this.menu) {
-      // Ensure menu is clickable and visible
-      this.menu.style.pointerEvents = 'auto'
       this.menu.style.zIndex = '100000'
       this.portal.appendChild(this.menu)
     }
+
+    // Ensure nothing intercepts taps until the menu is opened
+    this.setInteractivity(false)
 
     // Burger button click
     this.burgers.forEach(btn => btn.addEventListener('click', () => this.toggle()))
@@ -64,6 +63,7 @@ export const MobileNav = {
 
   open() {
     this.isOpen = true
+    this.setInteractivity(true)
     this.menu?.classList.remove('translate-x-full')
     this.menu?.classList.add('translate-x-0')
     this.backdrop?.classList.remove('opacity-0', 'pointer-events-none')
@@ -94,6 +94,7 @@ export const MobileNav = {
       document.body.style.overflow = ''
       document.documentElement.classList.remove('mobile-menu-open')
       document.body.classList.remove('mobile-menu-open')
+      this.setInteractivity(false)
     }, 300)
 
     // Reset burger animation
@@ -108,8 +109,16 @@ export const MobileNav = {
   },
 
   destroyed() {
+    this.setInteractivity(false)
     document.body.style.overflow = ''
     document.documentElement.classList.remove('mobile-menu-open')
     document.body.classList.remove('mobile-menu-open')
+  },
+
+  setInteractivity(enabled) {
+    const pointerValue = enabled ? 'auto' : 'none'
+    if (this.portal) this.portal.style.pointerEvents = pointerValue
+    if (this.backdrop) this.backdrop.style.pointerEvents = pointerValue
+    if (this.menu) this.menu.style.pointerEvents = pointerValue
   }
 }

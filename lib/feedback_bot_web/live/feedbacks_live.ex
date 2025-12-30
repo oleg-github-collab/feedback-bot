@@ -2,6 +2,8 @@ defmodule FeedbackBotWeb.FeedbacksLive do
   use FeedbackBotWeb, :live_view
 
   alias FeedbackBot.Feedbacks
+  alias FeedbackBot.Jobs.UpdateAnalyticsJob
+  alias Oban
 
   @impl true
   def mount(_params, _session, socket) do
@@ -12,6 +14,13 @@ defmodule FeedbackBotWeb.FeedbacksLive do
       |> assign(:page_title, "Фідбеки")
       |> assign(:active_nav, "/feedbacks")
       |> assign(:feedbacks, feedbacks)
+      |> assign(:rewrite_target, nil)
+      |> assign(:rewrite_text, "")
+      |> assign(:delete_target, nil)
+
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(FeedbackBot.PubSub, "feedbacks")
+    end
 
     {:ok, socket}
   end
@@ -56,6 +65,82 @@ defmodule FeedbackBotWeb.FeedbacksLive do
                   (<%= Float.round(feedback.sentiment_score, 2) %>)
                 </span>
               </div>
+
+              <div class="flex flex-wrap gap-2 mb-4">
+                <button
+                  type="button"
+                  phx-click="start_rewrite"
+                  phx-value-id={feedback.id}
+                  class="neo-brutal-btn-sm bg-indigo-600 text-white border-black"
+                >
+                  ✏️ Перезаписати
+                </button>
+                <button
+                  type="button"
+                  phx-click="confirm_delete"
+                  phx-value-id={feedback.id}
+                  class="neo-brutal-btn-sm bg-red-500 text-white border-black"
+                >
+                  🗑 Видалити
+                </button>
+              </div>
+
+              <%= if @delete_target == feedback.id do %>
+                <div class="border-2 border-red-600 bg-red-50 p-3 rounded-lg mb-4">
+                  <p class="text-sm font-semibold text-red-700">
+                    Ви впевнені, що хочете видалити цей фідбек?
+                  </p>
+                  <div class="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      phx-click="delete_feedback"
+                      phx-value-id={feedback.id}
+                      class="neo-brutal-btn-sm bg-red-600 text-white border-black"
+                      phx-disable-with="Видаляю..."
+                    >
+                      Так, видалити
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="cancel_delete"
+                      class="neo-brutal-btn-sm bg-white"
+                    >
+                      Скасувати
+                    </button>
+                  </div>
+                </div>
+              <% end %>
+
+              <%= if @rewrite_target == feedback.id do %>
+                <div class="border-2 border-indigo-500 bg-indigo-50 p-3 rounded-lg mb-4">
+                  <p class="text-sm font-semibold text-indigo-800">
+                    Перезапишіть відгук, якщо потрібно виправити зміст або інтерпретацію.
+                  </p>
+                  <form phx-submit="save_rewrite" phx-value-id={feedback.id} class="space-y-2 mt-2">
+                    <textarea
+                      name="transcription"
+                      class="w-full h-28 text-sm border-2 border-black p-3 bg-white"
+                      placeholder="Вставте правильний текст або коротко опишіть новий фідбек"
+                    ><%= @rewrite_text %></textarea>
+                    <div class="flex gap-2">
+                      <button
+                        type="submit"
+                        class="neo-brutal-btn-sm bg-indigo-600 text-white border-black"
+                        phx-disable-with="Перезаписую..."
+                      >
+                        Перезаписати
+                      </button>
+                      <button
+                        type="button"
+                        phx-click="cancel_rewrite"
+                        class="neo-brutal-btn-sm bg-white"
+                      >
+                        Скасувати
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              <% end %>
 
               <div class="space-y-3">
                 <div>
@@ -132,7 +217,136 @@ defmodule FeedbackBotWeb.FeedbacksLive do
     """
   end
 
+  @impl true
+  def handle_event("start_rewrite", %{"id" => id}, socket) do
+    case Enum.find(socket.assigns.feedbacks, &(&1.id == id)) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Фідбек не знайдено")}
+
+      feedback ->
+        {:noreply,
+         socket
+         |> assign(:rewrite_target, feedback.id)
+         |> assign(:rewrite_text, feedback.transcription || "")
+         |> assign(:delete_target, nil)}
+    end
+  end
+
+  def handle_event("cancel_rewrite", _params, socket) do
+    {:noreply, reset_rewrite(socket)}
+  end
+
+  def handle_event("save_rewrite", %{"id" => id, "transcription" => transcription}, socket) do
+    cleaned = String.trim(to_string(transcription || ""))
+
+    cond do
+      cleaned == "" ->
+        {:noreply, put_flash(socket, :error, "Введіть нову транскрипцію або текст фідбеку")}
+
+      feedback = Feedbacks.get_feedback(id) ->
+        case Feedbacks.reanalyze_feedback(feedback, cleaned) do
+          {:ok, updated} ->
+            broadcast_feedback(:updated, updated)
+            enqueue_analytics_refresh()
+
+            feedbacks = replace_feedback(socket.assigns.feedbacks, updated)
+
+            {:noreply,
+             socket
+             |> assign(:feedbacks, feedbacks)
+             |> reset_rewrite()
+             |> put_flash(:info, "Фідбек перезаписано та проаналізовано наново")}
+
+          {:error, :empty_transcription} ->
+            {:noreply, put_flash(socket, :error, "Текст фідбеку не може бути порожнім")}
+
+          {:error, reason} ->
+            {:noreply, put_flash(socket, :error, "Не вдалося перезаписати: #{humanize_error(reason)}")}
+        end
+
+      true ->
+        {:noreply, put_flash(socket, :error, "Фідбек не знайдено")}
+    end
+  end
+
+  def handle_event("confirm_delete", %{"id" => id}, socket) do
+    {:noreply, assign(socket, :delete_target, id)}
+  end
+
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply, assign(socket, :delete_target, nil)}
+  end
+
+  def handle_event("delete_feedback", %{"id" => id}, socket) do
+    case Feedbacks.get_feedback(id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Фідбек не знайдено")}
+
+      feedback ->
+        case Feedbacks.delete_feedback(feedback) do
+          {:ok, _} ->
+            broadcast_feedback(:deleted, feedback)
+            enqueue_analytics_refresh()
+
+            feedbacks = Enum.reject(socket.assigns.feedbacks, &(&1.id == feedback.id))
+
+            {:noreply,
+             socket
+             |> assign(:feedbacks, feedbacks)
+             |> assign(:delete_target, nil)
+             |> reset_rewrite()
+             |> put_flash(:info, "Фідбек видалено")}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, "Не вдалося видалити фідбек")}
+        end
+    end
+  end
+
+  @impl true
+  def handle_info({type, _payload}, socket) when type in [:new_feedback, :feedback_updated, :feedback_deleted] do
+    {:noreply, refresh_feedbacks(socket)}
+  end
+
   defp sentiment_emoji("positive"), do: "😊"
   defp sentiment_emoji("negative"), do: "😟"
   defp sentiment_emoji(_), do: "😐"
+
+  defp replace_feedback(feedbacks, updated) do
+    Enum.map(feedbacks, fn feedback ->
+      if feedback.id == updated.id, do: updated, else: feedback
+    end)
+  end
+
+  defp reset_rewrite(socket) do
+    socket
+    |> assign(:rewrite_target, nil)
+    |> assign(:rewrite_text, "")
+  end
+
+  defp refresh_feedbacks(socket) do
+    socket
+    |> assign(:feedbacks, Feedbacks.list_feedbacks(limit: 50))
+    |> assign(:delete_target, nil)
+    |> assign(:rewrite_target, nil)
+    |> assign(:rewrite_text, "")
+  end
+
+  defp broadcast_feedback(:updated, feedback) do
+    Phoenix.PubSub.broadcast(FeedbackBot.PubSub, "feedbacks", {:feedback_updated, feedback})
+  end
+
+  defp broadcast_feedback(:deleted, feedback) do
+    Phoenix.PubSub.broadcast(FeedbackBot.PubSub, "feedbacks", {:feedback_deleted, feedback.id})
+  end
+
+  defp enqueue_analytics_refresh do
+    %{type: "all"}
+    |> UpdateAnalyticsJob.new()
+    |> Oban.insert()
+  end
+
+  defp humanize_error(:invalid_feedback), do: "Некоректний фідбек"
+  defp humanize_error(:empty_transcription), do: "Додайте текст фідбеку"
+  defp humanize_error(reason), do: inspect(reason)
 end
