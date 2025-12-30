@@ -113,11 +113,28 @@ defmodule FeedbackBotWeb.DashboardLive do
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <!-- Sentiment Trend Chart -->
           <div class="neo-brutal-card">
-            <h2 class="text-lg sm:text-xl lg:text-2xl font-black uppercase mb-3 sm:mb-4">
-              Тренд Тональності
+            <h2 class="text-lg sm:text-xl lg:text-2xl font-black uppercase mb-3 sm:mb-4 flex items-center gap-2">
+              <span>📈</span>
+              <span>Тренд Тональності (30 днів)</span>
             </h2>
-            <div class="h-48 sm:h-56 lg:h-64 overflow-x-auto">
-              <.sentiment_chart data={@sentiment_trend} />
+            <div class="h-64 sm:h-72 lg:h-80">
+              <div
+                id="sentiment-trend-chart"
+                phx-hook="SentimentTrendChart"
+                data-sentiment-trend={Jason.encode!(@sentiment_trend)}
+                class="h-full w-full"
+              >
+              </div>
+            </div>
+            <div class="mt-4 flex gap-2 text-xs font-bold text-gray-600">
+              <div class="flex items-center gap-1">
+                <div class="w-3 h-3 bg-violet-500 rounded-full"></div>
+                <span>Тональність (-1 до +1)</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <div class="w-3 h-0.5 bg-yellow-500"></div>
+                <span>Кількість фідбеків</span>
+              </div>
             </div>
           </div>
 
@@ -315,24 +332,6 @@ defmodule FeedbackBotWeb.DashboardLive do
     """
   end
 
-  attr :data, :list, required: true
-
-  defp sentiment_chart(assigns) do
-    ~H"""
-    <div class="h-full flex items-end justify-between gap-1">
-      <%= for point <- @data do %>
-        <div class="flex-1 flex flex-col items-center">
-          <div
-            class="w-full bg-blue-500 border-2 border-black"
-            style={"height: #{normalize_sentiment(point.avg_sentiment)}%"}
-            title={"#{Calendar.strftime(point.date, "%d/%m")}: #{Float.round(point.avg_sentiment, 2)}"}
-          >
-          </div>
-        </div>
-      <% end %>
-    </div>
-    """
-  end
 
   defp sentiment_color(sentiment) when sentiment > 0.3, do: "text-green-600"
   defp sentiment_color(sentiment) when sentiment < -0.3, do: "text-red-600"
@@ -346,10 +345,6 @@ defmodule FeedbackBotWeb.DashboardLive do
 
   defp sentiment_badge_color(_), do: "bg-gray-100 text-gray-700 border border-gray-300"
 
-  defp normalize_sentiment(sentiment) do
-    # Перетворюємо -1..1 в 0..100
-    ((sentiment + 1) / 2 * 100) |> max(5) |> min(100) |> round()
-  end
 
   # Lightweight runtime snapshot so лічильники працюють навіть без precomputed analytics
   defp runtime_snapshot(days) do

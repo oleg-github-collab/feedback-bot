@@ -115,6 +115,204 @@ export const TrendChart = {
   }
 };
 
+// Dashboard Sentiment Trend Chart - specialized for dashboard
+export const SentimentTrendChart = {
+  mounted() {
+    this.chart = null;
+    this.renderChart();
+  },
+  updated() {
+    this.renderChart();
+  },
+  destroyed() {
+    if (this.chart) this.chart.destroy();
+  },
+  renderChart() {
+    const data = JSON.parse(this.el.dataset.sentimentTrend || '[]');
+
+    if (!data || data.length === 0) {
+      this.el.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500 text-sm font-bold">Немає даних для відображення</div>';
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    this.el.innerHTML = '';
+    this.el.appendChild(canvas);
+
+    if (this.chart) this.chart.destroy();
+
+    // Prepare data
+    const labels = data.map(d => {
+      const date = new Date(d.date);
+      return date.toLocaleDateString('uk-UA', { day: '2-digit', month: 'short' });
+    });
+
+    const sentimentData = data.map(d => d.avg_sentiment || 0);
+    const feedbackCounts = data.map(d => d.total_feedbacks || 0);
+
+    this.chart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Тональність',
+            data: sentimentData,
+            borderColor: 'rgb(139, 92, 246)',
+            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+            tension: 0.4,
+            borderWidth: 3,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: 'rgb(139, 92, 246)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            fill: true,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Кількість фідбеків',
+            data: feedbackCounts,
+            borderColor: 'rgb(234, 179, 8)',
+            backgroundColor: 'rgba(234, 179, 8, 0.05)',
+            tension: 0.4,
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: 'rgb(234, 179, 8)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            borderDash: [5, 5],
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: {
+                size: 12,
+                weight: 'bold',
+                family: 'system-ui'
+              },
+              padding: 15,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            bodyFont: {
+              size: 13
+            },
+            titleFont: {
+              size: 14,
+              weight: 'bold'
+            },
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.y !== null) {
+                  if (context.datasetIndex === 0) {
+                    // Sentiment value
+                    label += context.parsed.y.toFixed(2);
+                    const sentiment = context.parsed.y;
+                    if (sentiment > 0.3) label += ' (позитивна)';
+                    else if (sentiment < -0.3) label += ' (негативна)';
+                    else label += ' (нейтральна)';
+                  } else {
+                    // Feedback count
+                    label += context.parsed.y + ' фідбеків';
+                  }
+                }
+                return label;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            min: -1,
+            max: 1,
+            ticks: {
+              callback: function(value) {
+                return value.toFixed(1);
+              },
+              font: {
+                size: 11,
+                weight: 'bold'
+              }
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            },
+            title: {
+              display: true,
+              text: 'Тональність',
+              font: {
+                size: 12,
+                weight: 'bold'
+              }
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            min: 0,
+            ticks: {
+              stepSize: 1,
+              font: {
+                size: 11,
+                weight: 'bold'
+              }
+            },
+            grid: {
+              drawOnChartArea: false,
+            },
+            title: {
+              display: true,
+              text: 'Кількість',
+              font: {
+                size: 12,
+                weight: 'bold'
+              }
+            }
+          },
+          x: {
+            ticks: {
+              maxRotation: 45,
+              minRotation: 0,
+              font: {
+                size: 11,
+                weight: 'bold'
+              }
+            },
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+  }
+};
+
 export const ComparisonChart = {
   mounted() {
     this.chart = null;

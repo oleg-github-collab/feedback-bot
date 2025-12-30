@@ -159,6 +159,7 @@ defmodule FeedbackBot.Analytics do
       select: %{
         date: s.period_start,
         avg_sentiment: s.avg_sentiment,
+        total_feedbacks: s.total_feedbacks,
         positive: s.positive_count,
         neutral: s.neutral_count,
         negative: s.negative_count

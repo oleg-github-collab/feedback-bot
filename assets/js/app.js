@@ -10,6 +10,7 @@ import topbar from "../vendor/topbar"
 import {
   HeatmapChart,
   TrendChart,
+  SentimentTrendChart,
   ComparisonChart,
   WordCloud,
   VolumeSentimentChart,
@@ -30,6 +31,7 @@ Hooks.MobileNav = MobileNav
 // Advanced Analytics Hooks
 Hooks.HeatmapChart = HeatmapChart
 Hooks.TrendChart = TrendChart
+Hooks.SentimentTrendChart = SentimentTrendChart
 Hooks.ComparisonChart = ComparisonChart
 Hooks.WordCloud = WordCloud
 Hooks.VolumeSentimentChart = VolumeSentimentChart
