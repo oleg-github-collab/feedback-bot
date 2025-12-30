@@ -22,8 +22,20 @@
   /* Ensure all interactive elements are clickable */
   button, a, input, textarea, select, [role="button"], [data-burger], [data-mobile-link] {
     touch-action: manipulation;
-    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    -webkit-tap-highlight-color: rgba(139, 92, 246, 0.15);
     cursor: pointer;
+    /* Ensure proper event handling */
+    pointer-events: auto;
+    position: relative;
+  }
+
+  /* Make buttons more tappable on mobile */
+  button, [role="button"], .neo-brutal-btn, .neo-brutal-btn-sm {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* Mobile menu specific fixes for Telegram */

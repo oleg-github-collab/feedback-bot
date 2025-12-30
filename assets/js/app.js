@@ -125,6 +125,29 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// Initialize Telegram WebApp if available
+if (window.Telegram && window.Telegram.WebApp) {
+  const tg = window.Telegram.WebApp
+
+  // Expand the WebApp to full height
+  tg.expand()
+
+  // Enable closing confirmation
+  tg.enableClosingConfirmation()
+
+  // Set header color
+  tg.setHeaderColor('#0f172a')
+
+  // Ready signal
+  tg.ready()
+
+  console.log('Telegram WebApp initialized', {
+    version: tg.version,
+    platform: tg.platform,
+    colorScheme: tg.colorScheme
+  })
+}
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 
