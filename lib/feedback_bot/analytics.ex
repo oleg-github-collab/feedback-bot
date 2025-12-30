@@ -27,12 +27,19 @@ defmodule FeedbackBot.Analytics do
   end
 
   @doc """
-  Створює або оновлює analytics snapshot для заданого періоду
+  Створює або оновлює analytics snapshot для заданого періоду.
+
+  Періоди визначаються так:
+  - daily: від 00:00:00 до 23:59:59 поточного дня
+  - weekly: від понеділка 00:00:00 до неділі 23:59:59 поточного тижня
+  - monthly: від першого дня місяця 00:00:00 до останнього дня 23:59:59
+
+  Використовуємо >= та <= для включення всіх фідбеків в межах періоду.
   """
   def create_snapshot(period_type) do
     {period_start, period_end} = get_period_bounds(period_type)
 
-    # Отримуємо статистику за період
+    # Отримуємо статистику за період (inclusive boundaries)
     stats = Feedbacks.get_summary_stats(%{from: period_start, to: period_end})
 
     snapshot_attrs = %{
@@ -71,23 +78,28 @@ defmodule FeedbackBot.Analytics do
   end
 
   defp get_period_bounds("daily") do
-    now = DateTime.utc_now()
-    start_of_day = DateTime.new!(Date.utc_today(), ~T[00:00:00])
-    {start_of_day, now}
+    today = Date.utc_today()
+    start_of_day = DateTime.new!(today, ~T[00:00:00])
+    end_of_day = DateTime.new!(today, ~T[23:59:59])
+    {start_of_day, end_of_day}
   end
 
   defp get_period_bounds("weekly") do
-    now = DateTime.utc_now()
-    days_since_monday = Date.day_of_week(Date.utc_today()) - 1
-    start_of_week = DateTime.add(now, -days_since_monday, :day)
-    start_of_week = DateTime.new!(DateTime.to_date(start_of_week), ~T[00:00:00])
-    {start_of_week, now}
+    today = Date.utc_today()
+    days_since_monday = Date.day_of_week(today) - 1
+    monday = Date.add(today, -days_since_monday)
+    sunday = Date.add(monday, 6)
+
+    start_of_week = DateTime.new!(monday, ~T[00:00:00])
+    end_of_week = DateTime.new!(sunday, ~T[23:59:59])
+    {start_of_week, end_of_week}
   end
 
   defp get_period_bounds("monthly") do
-    now = DateTime.utc_now()
-    start_of_month = DateTime.new!(Date.utc_today() |> Date.beginning_of_month(), ~T[00:00:00])
-    {start_of_month, now}
+    today = Date.utc_today()
+    start_of_month = DateTime.new!(Date.beginning_of_month(today), ~T[00:00:00])
+    end_of_month = DateTime.new!(Date.end_of_month(today), ~T[23:59:59])
+    {start_of_month, end_of_month}
   end
 
   defp calculate_sentiment_trend(period_type, current_sentiment) do
@@ -102,18 +114,12 @@ defmodule FeedbackBot.Analytics do
   end
 
   defp get_previous_snapshot(period_type) do
-    shift_days =
-      case period_type do
-        "daily" -> -1
-        "weekly" -> -7
-        "monthly" -> -30
-      end
+    {current_start, _current_end} = get_period_bounds(period_type)
 
-    target_date = DateTime.utc_now() |> DateTime.add(shift_days, :day)
-
+    # Отримуємо попередній snapshot: той що має period_start раніше поточного
     from(s in Snapshot,
       where: s.period_type == ^period_type,
-      where: s.period_start <= ^target_date,
+      where: s.period_start < ^current_start,
       order_by: [desc: s.period_start],
       limit: 1
     )

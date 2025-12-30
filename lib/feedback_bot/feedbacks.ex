@@ -378,7 +378,7 @@ defmodule FeedbackBot.Feedbacks do
   Отримує summary статистику для Analytics snapshots
   """
   def get_summary_stats(%{from: period_start, to: period_end}) do
-    # Основна статистика
+    # Основна статистика - використовуємо >= та <= для включення всього періоду
     base_stats = from(f in Feedback,
       where: f.inserted_at >= ^period_start and f.inserted_at <= ^period_end,
       where: f.processing_status == "completed",
@@ -423,7 +423,7 @@ defmodule FeedbackBot.Feedbacks do
         %{"description" => strength, "count" => count}
       end)
 
-    # Employee stats
+    # Employee stats - використовуємо >= та <= для включення всього періоду
     employee_stats = from(f in Feedback,
       where: f.inserted_at >= ^period_start and f.inserted_at <= ^period_end,
       where: f.processing_status == "completed",
